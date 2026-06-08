@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAPEX — Investment Process Detail</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/capex.css">
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <div class="splash-logo">
+    <svg class="capex-logo-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="capexDotGlowSpl" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#fff"    stop-opacity="0.95"/>
+          <stop offset="40%"  stop-color="#FFEFCB" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#FFEFCB" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <path id="capexChartPathSpl" d="M 3.5 18.5 L 9.5 12.5 L 13.5 16.5 L 22 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <g>
+        <circle r="4.5" fill="url(#capexDotGlowSpl)"/>
+        <circle r="1.2" fill="#fff" opacity="0.92"/>
+        <animateMotion dur="3s" repeatCount="indefinite">
+          <mpath href="#capexChartPathSpl"/>
+        </animateMotion>
+      </g>
+    </svg>
+  </div>
+  <div class="splash-text">
+    <div class="splash-title">CAPEX</div>
+    <div class="splash-status">Loading investment data…</div>
+  </div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<div class="header-blur-curtain"></div>
+<header class="app-header">
+  <div class="app-header-inner">
+    <div class="app-title">
+      <div class="app-logo">
+        <svg class="capex-logo-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="capexDotGlowHdr" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="#fff"    stop-opacity="0.95"/>
+              <stop offset="40%"  stop-color="#FFEFCB" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#FFEFCB" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <path id="capexChartPathHdr" d="M 3.5 18.5 L 9.5 12.5 L 13.5 16.5 L 22 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <g>
+            <circle r="4.5" fill="url(#capexDotGlowHdr)"/>
+            <circle r="1.2" fill="#fff" opacity="0.92"/>
+            <animateMotion dur="3s" repeatCount="indefinite">
+              <mpath href="#capexChartPathHdr"/>
+            </animateMotion>
+          </g>
+        </svg>
+      </div>
+      <span class="app-name">MPM CAPEX<span class="app-name-accent"> Investment Process Management</span></span>
+    </div>
+    <div class="app-actions">
+      <a href="index.html" class="hBtn hGrey waves-effect"><i class="material-icons">arrow_back</i><span class="label">Back to List</span></a>
+      <a href="javascript:;" class="hBtn hBlue waves-effect" id="btnSave"><i class="material-icons">save</i><span class="label">Save</span></a>
+    </div>
+  </div>
+</header>
+
+<main class="app-main">
+  <article class="detail-layout">
+
+    <!-- Left: Workflow (10 Stages) -->
+    <aside class="detail-left">
+      <div class="routing-panel glass-panel">
+        <div class="routing-header">
+          <h3><i class="material-icons">account_tree</i>CAPEX Stages</h3>
+          <a href="javascript:;" class="hBtn hBtn-sm hViva hBtn-pulse waves-effect" id="btnProcessMap"><i class="material-icons">map</i><span class="label">Process Map</span></a>
+        </div>
+
+        <div class="routing-timeline" id="routingTimeline"></div>
+      </div>
+    </aside>
+
+    <!-- Right: Stage detail panels (sequentially scrollable) -->
+    <section class="detail-right" id="detailRight">
+
+      <!-- Title bar -->
+      <div class="detail-title-bar glass-panel">
+        <div class="detail-title-left">
+          <span class="detail-type-badge" id="titleBadge">Strategic Growth</span>
+          <h2><span class="detail-mr-id" id="dHeadId">[CAPEX-2026-WF-0042]</span><span class="detail-mr-desc" id="dHeadDesc">New Reactor — Polymer Line Capacity Expansion</span></h2>
+        </div>
+        <div class="detail-title-right">
+          <span class="detail-last-mod" id="titleLastMod">Last Mod. May 26, 2026 09:14 AM</span>
+        </div>
+      </div>
+
+      <!-- 10 Stage sections rendered here by detail.js -->
+      <div id="stageSections"></div>
+
+    </section>
+  </article>
+</main>
+
+<!-- Process Map Modal -->
+<div id="pmModal" class="modal search-modal pm-modal">
+  <div class="modal-header">
+    <h5><i class="material-icons">account_tree</i><span id="pmTitle">CAPEX Process Map</span></h5>
+    <a href="javascript:;" class="modal-close"><i class="material-icons">close</i></a>
+  </div>
+  <div class="modal-content pm-body" id="pmBody"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<!-- Highcharts — Stage 8 S-Curve (arearange 는 highcharts-more 필요) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.4.8/highcharts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.4.8/highcharts-more.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/detail.js"></script>
+</body>
+</html>

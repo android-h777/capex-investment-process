@@ -1,0 +1,1007 @@
+/* =====================================================================
+ * capex.css — CAPEX 프로토타입 전용 추가 스타일
+ *
+ * 원칙: master-data common.css 의 토큰(:root) / 패턴(bi-* / hoo-* / rt-* / hBtn 등)
+ *      을 그대로 재사용. 여기엔 master-data 에 정의되지 않은
+ *      CAPEX-only 컴포넌트만 둔다.
+ *
+ * (CLAUDE.md 절대 룰: 새 CSS 파일 생성 금지 — 본 파일은 사용자 합의 후
+ *  common.css 로 흡수 예정. 시연용 분리 보관.)
+ * ===================================================================== */
+
+/* ---- 0. CAPEX 대표 컬러 — Bronze / Warm Amber (master-data violet → bronze 차별화)
+       common.css 의 모든 var(--c-primary) / var(--c-primary-d) 참조가 한방에 적용됨.
+       :root 직접 박힌 보라 RGB (rgba(155,142,190,...) 같은 펄스 색)는 별도 override 가능. */
+:root {
+  --c-primary:   #B89656;  /* warm bronze */
+  --c-primary-d: #8B6F40;  /* deep bronze (hover / 강조) */
+  /* 보더 톤 다운 (2026-06-05) — 선 유지하되 흐리게.
+     보스: 선 비선호 / 사용자: 선 있어야 인식 → 제거 대신 옅게.
+     common.css 원본 0.32 → 0.15. input/select/dropzone 등 토큰 참조 일괄 적용 */
+  --c-border-strong: rgba(102, 112, 130, 0.15);
+}
+
+/* common.css 의 보라 RGB 직접 박힌 곳 (rt-card 펄스 / active 등) bronze RGB(184,150,86)로 정렬 */
+.rt-card.rt-sub-current {
+  background: rgba(184, 150, 86, 0.10);
+  border-color: rgba(184, 150, 86, 0.32);
+  animation-name: rtPulseCapex;
+}
+.rt-card.rt-sub-current.spy-active {
+  animation-name: rtPulseGlassCapex;
+}
+.rt-card.active {
+  background: rgba(184, 150, 86, 0.10);
+  border-color: rgba(184, 150, 86, 0.30);
+}
+/* Waves 리플도 violet → bronze 정렬 (common.css 라일락 잔존 — 잔상 사건으로 발견, 2026-06-05) */
+.rt-card .waves-ripple {
+  background: radial-gradient(circle,
+    rgba(184, 150, 86, 0.35) 0%,
+    rgba(184, 150, 86, 0.16) 60%,
+    transparent 100%);
+}
+@keyframes rtPulseCapex {
+  0%   { box-shadow: 0 0 0 0   rgba(184, 150, 86, 0.35); }
+  50%  { box-shadow: 0 0 0 8px rgba(184, 150, 86, 0);    }
+  100% { box-shadow: 0 0 0 0   rgba(184, 150, 86, 0);    }
+}
+@keyframes rtPulseGlassCapex {
+  0%   { box-shadow: 0 4px 14px rgba(184, 150, 86, 0.35), 0 1px 4px rgba(0,0,0,0.08), 0 0 0 0   rgba(184, 150, 86, 0.35); }
+  50%  { box-shadow: 0 4px 14px rgba(184, 150, 86, 0.35), 0 1px 4px rgba(0,0,0,0.08), 0 0 0 10px rgba(184, 150, 86, 0);    }
+  100% { box-shadow: 0 4px 14px rgba(184, 150, 86, 0.35), 0 1px 4px rgba(0,0,0,0.08), 0 0 0 0   rgba(184, 150, 86, 0);    }
+}
+
+
+/* ---- 1. Stage Placeholder (Stage 2~10 임시 카드) ---- */
+.cpx-placeholder {
+  display: flex;
+  gap: 15px;
+  padding: 20px;
+  background: var(--c-bg-soft);
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--radius-md);
+  margin-top: 10px;
+}
+.cpx-placeholder-ico {
+  flex: 0 0 40px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-mute);
+}
+.cpx-placeholder-ico i { font-size: 22px; }
+.cpx-placeholder-body { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.cpx-placeholder-title {
+  font-weight: 700; font-size: 14px; color: var(--c-text);
+}
+.cpx-placeholder-desc {
+  font-size: 13px; color: var(--c-text-soft); line-height: 1.5;
+}
+.cpx-placeholder-ref {
+  font-size: 13px; color: var(--c-text-mute); /* 12px → 13px 룰 정정 */
+  padding-top: 5px;
+  border-top: 1px dashed var(--c-border);
+  margin-top: 5px;
+}
+
+/* ---- 3. detail-section 간 간격 (10개 세로 스택) ---- */
+#stageSections .detail-section { margin-bottom: 20px; scroll-margin-top: 120px; }
+#stageSections .detail-section:last-child { margin-bottom: 60px; }
+
+/* ---- 4. 금액 인풋 — $ 단위 고정 + 강조 (Est. Budget, Approved Amount 등 핵심 금액) */
+.aniInput.cpx-money-field {
+  display: flex;
+  align-items: stretch;
+  padding-left: 0;
+}
+.cpx-money-unit {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  padding-right: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-primary-d);  /* bronze 강조 */
+  font-variant-numeric: tabular-nums;
+}
+.aniInput.cpx-money-field input.cpx-money {
+  flex: 1;
+  min-width: 0;
+  padding-left: 2px !important;  /* $ 와 살짝 띄움 */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 15px;               /* 다른 input(13px)보다 살짝 크게 강조 */
+  color: var(--c-primary-d);     /* bronze 강조 */
+  letter-spacing: 0.02em;
+}
+/* 단위 suffix (/yr 등) — $ 단위와 동일하게 고정 표시 */
+.cpx-money-suffix {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+  padding-right: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-mute);
+}
+
+/* ---- 5. Readonly 필드 — view 모드 (박스/배경 제거, 텍스트만 깔끔)
+       master-data common.css 5647- 의 회색 박스 readonly 스타일 override.
+       편집 가능 input 과 시작점 정렬 유지(padding 그대로), 시각적으론 평문 텍스트. */
+.detail-section .aniInput input[readonly],
+.detail-section input[readonly] {
+  background: transparent !important;
+  border-bottom-color: transparent !important;
+  color: var(--c-text) !important;
+  cursor: default;
+}
+
+/* ---- 6. form-grid 안 select 도 minimal — aniInput input 과 시각 정확히 일치
+       master-data .aniInput .browser-default 는 padding: 8px 5px / line-height 22px / font-size 13px.
+       동일 값으로 select 정렬 → 텍스트 좌측 시작점 / 높이 / 폰트 모두 input 과 동일. */
+/* select / input outer height 정확히 동일 — box-sizing + height 명시값 박음 */
+.detail-section .form-grid .aniInput input,
+.detail-section .form-grid .bi-select {
+  box-sizing: border-box;
+  height: 39px;  /* padding 8+8 + line-height 22 + border 1 */
+}
+.detail-section .form-grid .bi-select {
+  background-color: rgba(255,255,255,0.55); /* input과 정확히 동일 warm tint */
+  background-image: none !important;                       /* native gradient 잔재 제거 */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  border: none !important;
+  border-bottom: 1px solid var(--c-border-strong) !important;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 8px 24px 8px 5px !important;
+  line-height: 22px !important;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text);
+  box-shadow: none;
+  transition: border-color .2s ease;
+}
+/* hover — 배경 진해지고 underline 강조, smooth transition */
+.detail-section .form-grid .bi-select:hover {
+  background-color: rgba(184, 150, 86, 0.08) !important;
+  border-bottom-color: rgba(139, 111, 64, 0.55) !important;
+}
+/* focus — 배경 더 진해지고 underline bronze + soft glow */
+.detail-section .form-grid .bi-select:focus {
+  outline: none;
+  background-color: rgba(184, 150, 86, 0.12) !important;
+  border-bottom-color: var(--c-primary) !important;
+  box-shadow: 0 2px 12px rgba(184, 150, 86, 0.18);
+}
+/* chevron — Material Icons arrow_drop_down 글리프 사용 (CSS-only V 모양 대신) */
+.detail-section .form-grid .bi-select-wrap::after {
+  content: 'arrow_drop_down' !important;
+  font-family: 'Material Icons' !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  width: auto !important;
+  height: auto !important;
+  border: none !important;
+  color: var(--c-primary-d);
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform .25s ease, color .15s ease;
+  -webkit-font-smoothing: antialiased;
+}
+.detail-section .form-grid .bi-select-wrap:hover::after {
+  color: var(--c-primary);
+}
+/* 열림 상태는 JS(.is-open)로 관리 — :focus는 옵션 선택 후에도 유지돼서 chevron이 안 돌아오는 문제 */
+.detail-section .form-grid .bi-select-wrap.is-open::after {
+  transform: translateY(-50%) rotate(180deg);
+  color: var(--c-primary);
+}
+
+/* ---- 7. MASTERDATA 퀵서치 — Materialize M.Autocomplete 스킨만 override
+       (컴포넌트 markup/동작은 Materialize 그대로, 색/타이포만 bronze 톤)
+       ※ M.Autocomplete는 .input-field 조상에 드롭다운 ul을 append하므로
+         래퍼에 input-field 클래스 필수 — Materialize 기본 margin만 제거 */
+.detail-section .form-grid .cpx-qs-field.input-field {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.detail-section .form-grid .cpx-qs-field input.cpx-quicksearch {
+  padding-right: 30px; /* 우측 search 아이콘 자리 */
+}
+.detail-section .form-grid .cpx-qs-field .cpx-qs-ico {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: rgba(139, 111, 64, 0.45);
+  pointer-events: none;
+  transition: color .15s ease;
+}
+.detail-section .form-grid .cpx-qs-field:hover .cpx-qs-ico,
+.detail-section .form-grid .cpx-qs-field:has(input:focus) .cpx-qs-ico {
+  color: var(--c-primary);
+}
+
+/* 드롭다운이 다음 카드 아래로 묻힘 방지 —
+   .detail-section 은 isolation: isolate 라 카드별 stacking context 분리.
+   포커스 들어온 카드(=드롭다운 열린 카드)만 형제들 위로 올림.
+   ※ 형제 카드는 z-index auto 라 10이면 충분 — app-header(z:50) 아래 유지 */
+.detail-section:focus-within {
+  z-index: 10;
+}
+
+/* autocomplete 드롭다운 — input 폭에 붙는 패널 */
+.detail-section .form-grid .autocomplete-content.dropdown-content {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--c-border-strong);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  box-shadow: 0 10px 25px rgba(139, 111, 64, 0.18);
+  max-height: 250px;
+}
+/* 행 높이 = aniInput input 과 동일 메트릭 (padding 8 + line-height 22 ≈ 39px)
+   Materialize 기본 li min-height: 50px 가 두껍고 상하 정렬 깨뜨리는 원인 */
+.detail-section .form-grid .autocomplete-content.dropdown-content li {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+.detail-section .form-grid .autocomplete-content.dropdown-content li > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text);
+  padding: 8px 10px; /* 상하 8px = aniInput input 패딩과 동일 (높이 매칭) */
+  line-height: 22px;
+  width: 100%;
+}
+.detail-section .form-grid .autocomplete-content.dropdown-content li:hover,
+.detail-section .form-grid .autocomplete-content.dropdown-content li.active {
+  background-color: rgba(184, 150, 86, 0.10);
+}
+/* 타이핑 매칭 부분 강조 */
+.detail-section .form-grid .autocomplete-content.dropdown-content li > span .highlight {
+  color: var(--c-primary-d);
+  font-weight: 700;
+}
+
+/* ---- 7.5. 룰 정합 — 최소 폰트 13px (전 프로젝트 공통 룰, 2026-05-18 격상)
+       common.css .hoo-table 본문이 12px 로 룰 위반 (thead 만 13px) — override.
+       ※ master-data 원본 common.css 도 동일 위반 → 업스트림 수정 필요 */
+.hoo-table {
+  font-size: 13px;
+}
+.bi-block-title small {
+  font-size: 13px; /* common.css 11px — 13px 룰 위반 정정 */
+}
+/* common.css 의 hoo-num 우측 정렬이 tbody 스코프라 tfoot 합계가 좌측 정렬로 어긋남 — tfoot 보완
+   ※ master-data 원본 common.css 도 동일 → 업스트림 수정 필요 */
+.hoo-table tfoot td.hoo-num {
+  text-align: right;
+}
+
+/* ---- 7.6. 테이블 보더 톤 다운 — common.css 하드코딩 색(#ececdf 등) 옅게
+       (--c-border-strong 토큰 미사용 구간이라 개별 override) */
+.hoo-spec-table {
+  border-color: #f7f5ef;
+}
+.hoo-table thead th {
+  border-bottom-color: #eee9dc;
+}
+.hoo-table tbody td {
+  border-bottom-color: #f7f5ef;
+}
+/* input/select 언더라인도 테이블 td 구분선과 동일 톤으로 통일 */
+.detail-section .aniInput .browser-default,
+.detail-section .form-grid .bi-select {
+  border-bottom-color: #f7f5ef !important;
+}
+
+/* ---- 8. Stage 2 — Feasibility & Expected ROI
+       auto-calc 값 / 계산 근거 테이블(주석 행) / 첨부 칩 */
+
+/* auto-calc 표시값 — 입력이 아닌 산출 결과라 form-static + 강조
+   톤은 Est. Budget 머니필드/Basis 결과 행과 동일한 deep bronze 로 통일 */
+.detail-section .form-static.cpx-calc {
+  padding: 8px 5px; /* aniInput input 상하 패딩과 동일 — 행 높이 정렬 */
+  font-weight: 700;
+  color: var(--c-primary-d);
+  font-variant-numeric: tabular-nums;
+}
+/* 대표 KPI(Expected ROI)는 한 단계 큰 사이즈 */
+.detail-section .form-static.cpx-calc-roi {
+  font-size: 15px;
+}
+
+/* 산출 결과 행 (ROI/Payback/IRR/NPV) — 구조(tfoot) 대신 타이포로만 구분 */
+.detail-section .cpx-basis-table tr.cpx-result-row td {
+  color: var(--c-primary-d); /* deep bronze — 근거 행(기본 텍스트색)과 구분 */
+  font-weight: 600;
+}
+.detail-section .cpx-basis-table tr.cpx-result-row td.hoo-num {
+  font-weight: 700;
+  font-size: 14px; /* 결과 수치만 살짝 크게 */
+}
+
+/* 계산식 ? 툴팁 아이콘 — 라벨 옆 작은 help 마크 (식 자체는 M.Tooltip 으로)
+   컬러: bi-bar 와 동일한 terracotta orange (#d97757) — 눈에 띄게 + 새 색 도입 없음 */
+.detail-section .cpx-tip {
+  font-size: 15px;
+  color: rgba(217, 119, 87, 0.75);
+  vertical-align: -3px; /* 텍스트 베이스라인에 시각 정렬 */
+  margin-left: 5px;
+  cursor: help;
+  transition: color .15s ease;
+}
+.detail-section .cpx-tip:hover {
+  color: #d97757;
+}
+/* th 안 ? 툴팁 — thead 의 text-transform: uppercase 가 Material 리거처('help_outline'→'HELP_OUTLINE')를
+   깨뜨려 아이콘이 안 그려짐 → 리거처 원문 복구 (2026-06-05 Stage 6 Payment Terms 헤더에서 발견) */
+.detail-section .hoo-table thead th .cpx-tip {
+  text-transform: none;
+  letter-spacing: normal;
+}
+/* Materialize 툴팁 스킨 — master-data 토스트 글래스 공통 톤 재사용
+   (common.css .toast 글래스 + auroraShift RGB 색수차, violet → bronze 정렬) */
+.material-tooltip {
+  isolation: isolate;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(184, 150, 86, 0.30);
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  color: var(--c-text-strong, #1f2330) !important;
+  border-radius: 10px !important;
+  padding: 10px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.10),
+    0 2px 6px rgba(184, 150, 86, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(184, 150, 86, 0.08);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+.material-tooltip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* 토스트(0.18)보다 옅게 — 면적이 작아 같은 알파면 과해 보임 */
+  background: linear-gradient(120deg,
+    rgba(255, 107, 157, 0.08) 0%,
+    rgba(192, 132, 252, 0.08) 20%,
+    rgba(110, 168, 254, 0.08) 40%,
+    rgba(78, 205, 196, 0.08) 60%,
+    rgba(255, 230, 109, 0.08) 80%,
+    rgba(255, 107, 157, 0.08) 100%);
+  background-size: 300% 300%;
+  animation: auroraShift 10s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+/* CCC 표 안 입력 (COGS 금액 / days) — 셀 폭에 맞춰 컴팩트 */
+.detail-section .cpx-basis-table td .aniInput input {
+  font-size: 13px; /* 강조 15px 대신 테이블 본문 크기 */
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+  height: auto;
+}
+/* CCC 설명 — 별도 행 대신 라벨 옆 인라인 muted 텍스트 */
+.detail-section .cpx-basis-table .cpx-inline-note {
+  color: var(--c-text-mute);
+  font-size: 13px;
+  font-weight: 400;
+  margin-left: 10px;
+}
+/* CCC 표시값 (DIO/Lead Time) — 산출 결과보다 한 톤 연하게 */
+.detail-section .cpx-basis-table tr.cpx-row-main td.hoo-num {
+  color: var(--c-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+/* auto-calc 결과(WC Savings)만 deep bronze 강조 유지 */
+.detail-section .cpx-basis-table tr.cpx-row-main.cpx-result-row td.hoo-num {
+  color: var(--c-primary-d);
+  font-weight: 700;
+}
+/* 첨부 등록 — master-data dropzone 패턴의 컴팩트 다중 파일 변형
+   (문서종류별 대형 dropzone 대신 라벨 아래 한 줄 zone + 파일 행 누적) */
+.detail-section .dropzone.cpx-attach-zone {
+  min-height: 0; /* 원본 160px — 폼 안에선 컴팩트하게 */
+  padding: 15px;
+  cursor: pointer;
+}
+.detail-section .cpx-attach-zone .dz-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.detail-section .cpx-attach-zone .dz-file-list:not(:empty) {
+  margin-bottom: 10px;
+}
+.detail-section .cpx-attach-zone .dz-hint {
+  text-align: center;
+}
+
+/* ---- 10. Stage 4 — Installed Base Review (CMMS) */
+/* CMMS Work Order 링크 — mock */
+.detail-section .cpx-wo-link {
+  color: #5d80a3; /* baltic-sea 진한 톤 (accent 텍스트 대비 확보) */
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+.detail-section .cpx-wo-link:hover {
+  text-decoration: underline;
+}
+/* downtime 심각도 — 48hrs 이상 danger / 미만 terracotta */
+.detail-section .cpx-sev-high { color: var(--c-danger); font-weight: 700; }
+.detail-section .cpx-sev-low  { color: #d97757; font-weight: 600; }
+/* 개선 이력 Result 효과 */
+.detail-section .cpx-res-good { color: #899f6a; font-weight: 600; }
+.detail-section .cpx-res-part { color: #d97757; font-weight: 600; }
+.detail-section .cpx-res-bad  { color: var(--c-danger); font-weight: 600; }
+.detail-section .cpx-res-mute { color: var(--c-text-mute); } /* Not selected 등 탈락 아닌 미선정 */
+/* Key Findings — 이력 분석 → 신규 스펙 반영 하이라이트 박스 (src-checklist 웜톤 어법) */
+.detail-section .cpx-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px 20px;
+  background: #fffaf0;
+  border: 1px solid #f0e3c5;
+  border-radius: var(--radius-md);
+  margin-bottom: 25px;
+}
+.detail-section .cpx-finding-row {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--c-text);
+}
+.detail-section .cpx-finding-no {
+  color: var(--c-primary-d);
+  flex: 0 0 auto;
+}
+.detail-section .cpx-finding-act {
+  color: var(--c-primary-d);
+  font-weight: 700;
+}
+/* 테이블 블록 아래 호흡 (다음 bi-block-title 과의 간격) */
+.detail-section .hoo-spec-table {
+  margin-bottom: 25px;
+}
+
+/* ---- 11. Stage 5 — TBE 평가 테이블 */
+/* 최고 점수 벤더 하이라이트 (PDF 명세) — bronze 틴트 행. 보더 추가 금지 어법 유지 */
+.detail-section .cpx-winner-row td {
+  background: rgba(184, 150, 86, 0.07);
+}
+.detail-section .cpx-winner-row td:first-child b {
+  color: var(--c-primary-d);
+}
+/* 트로피 — 벤더명 옆 같은 줄 인라인 (칩은 컬럼 폭에서 줄바꿈 → 행 높이 깨져서 교체)
+   ※ 글래스 코인 변형 시도했다가 원복 (2026-06-05) — 16px 면적에 글래스는 과함 */
+.detail-section .cpx-winner-ico {
+  font-size: 16px;
+  color: var(--c-primary-d);
+  margin-left: 5px;
+  vertical-align: -3px;
+}
+/* winner 행 핵심 값 강조 — Stage 5 Score / Stage 6 Score·Negotiated (위치 결합 대신 마크업 클래스) */
+.detail-section .cpx-win-strong {
+  color: var(--c-primary-d);
+  font-weight: 700;
+}
+/* Decision 밴드 값 — 결과 문장 (mr-status 필 아닌 텍스트 결과) */
+.detail-section .cpx-decision-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-primary-d);
+}
+
+/* ---- 12. Materialize Datepicker — bronze 글래스 스킨 ((date) 필드 공통, 기본 teal override)
+       모달급 면적 → 글래스 엔진 OK (toast/tooltip 어법: 화이트 글래스 + blur + 좌상단 광원 + aurora)
+       aurora 알파 0.10 — 토스트(0.18)와 툴팁(0.08) 사이, 캘린더 셀 가독성 우선 */
+.datepicker-modal {
+  isolation: isolate;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(184, 150, 86, 0.30);
+  border-top: 1px solid rgba(255, 255, 255, 0.7); /* 좌상단 광원 통일 어법 */
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(184, 150, 86, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(184, 150, 86, 0.08);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+/* 마우스 추적 spotlight + 색수차 — rt-card/cpx-appr-step 유리판 어법
+   (자동 aurora 대신 커서 추적, transform 금지 — 추적 spotlight 만. 2026-06-05 사용자 결정) */
+.datepicker-modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse 240px 160px at var(--dp-gx, 50%) var(--dp-gy, 35%),
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.08) 45%,
+      transparent 70%
+    ),
+    conic-gradient(
+      from 0deg at var(--dp-gx, 50%) var(--dp-gy, 35%),
+      rgba(255, 0, 0, 0) 0%,
+      rgba(255, 0, 0, 0.04) 8%,
+      rgba(255, 165, 0, 0.04) 16%,
+      rgba(255, 255, 0, 0.05) 24%,
+      rgba(0, 255, 0, 0.05) 33%,
+      rgba(0, 200, 255, 0.05) 42%,
+      rgba(0, 100, 255, 0.05) 50%,
+      rgba(130, 0, 255, 0.05) 58%,
+      rgba(255, 0, 200, 0.04) 66%,
+      rgba(255, 0, 0, 0.04) 75%,
+      rgba(255, 0, 0, 0) 83%,
+      transparent 100%
+    );
+  z-index: -1;
+  pointer-events: none;
+}
+.datepicker-date-display {
+  /* 좌측 날짜 패널 — 솔리드 bronze → bronze 틴트 유리 (본체와 같은 유리판 어법, 2026-06-05)
+     틴트는 primary 와 primary-d 사이 톤 + 알파 0.72 — 흰 대형 타이포 대비 확보 하한 */
+  position: relative;
+  background-color: rgba(160, 128, 70, 0.72);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),  /* 좌상단 광원 통일 */
+    inset -1px 0 0 rgba(255, 255, 255, 0.25); /* 캘린더 면과의 유리 경계선 */
+}
+.datepicker-table td.is-today {
+  color: var(--c-primary-d);
+  font-weight: 700;
+}
+.datepicker-table td.is-selected {
+  background-color: var(--c-primary);
+  color: #fff;
+}
+.datepicker-day-button:focus {
+  background-color: rgba(184, 150, 86, 0.25);
+}
+.datepicker-cancel,
+.datepicker-clear,
+.datepicker-today,
+.datepicker-done {
+  color: var(--c-primary-d);
+}
+.month-prev:focus,
+.month-next:focus {
+  background-color: rgba(184, 150, 86, 0.15);
+}
+
+/* ---- 13. Stage 8 — S-Curve 차트 그리드 / Milestone Timeline (Highcharts) */
+.detail-section .cpx-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+.detail-section .cpx-chart-card {
+  background: #fff; /* #fbfaf6 → 흰색 — 범례 박스와 통일 (2026-06-05) */
+  border: 1px solid #f0ede3;
+  border-radius: var(--radius-md);
+  padding: 15px;
+}
+.detail-section .cpx-chart-full { grid-column: span 2; }
+.detail-section .cpx-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.detail-section .cpx-chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+/* 차트 컨테이너 — 높이는 Highcharts height 옵션이 결정, 로드 전 점프만 방지 */
+.detail-section .cpx-chart-box    { min-height: 220px; }
+.detail-section .cpx-chart-box-lg { min-height: 290px; }
+.detail-section .cpx-chart-status { font-size: 13px; font-weight: 600; }
+.detail-section .cpx-chart-status.t-success { color: #899f6a; }
+.detail-section .cpx-chart-status.t-accent  { color: #5d80a3; }
+.detail-section .cpx-chart-status.t-warn    { color: #d97757; }
+.detail-section .cpx-chart-head-r {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+/* 진도 입력 토글 — 아이콘+라벨 칩(pill). 평소 bronze 틴트, 열림(is-on) 시 bronze fill */
+.detail-section .cpx-chart-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px 2px 8px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-primary-d);
+  background: rgba(184, 150, 86, 0.10);
+  transition: background .15s ease, color .15s ease;
+}
+.detail-section .cpx-chart-edit .material-icons { font-size: 15px; }
+.detail-section .cpx-chart-edit:hover { background: rgba(184, 150, 86, 0.18); }
+.detail-section .cpx-chart-edit.is-on { background: var(--c-primary-d); color: #fff; }
+
+/* 진도 입력 에디터 — 카드 하단 토글 (원작에 없는 입력 화면 — 2026-06-05 추가)
+   테이블은 hoo-table 양식 + aniInput 셀 (Stage 2 basis 표 어법). max-height 는 잘림 방지 여유 */
+.detail-section .cpx-chart-editor {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+.detail-section .cpx-chart-editor.is-open {
+  max-height: 250px;
+  margin-top: 10px;
+}
+.detail-section .cpx-chart-editor .hoo-spec-table {
+  margin-bottom: 0; /* 카드 안이라 블록 간격(25px) 미적용 */
+}
+/* 카드 안 에디터라 셀 패딩 압축 (기본 10px → 5px) — 입력 패딩(5px)과 겹쳐 두꺼워지는 것 방지 */
+.detail-section .cpx-ed-table thead th,
+.detail-section .cpx-ed-table tbody td {
+  padding: 5px 10px;
+}
+.detail-section .cpx-ed-table thead th {
+  text-align: center; /* 월 헤더 — 입력값 중앙 정렬과 라인 일치 */
+}
+.detail-section .cpx-ed-table td.cpx-ed-label {
+  font-weight: 600;
+  color: var(--c-text-soft);
+}
+/* 셀 입력 — hoo-table 인풋 컨벤션(28px)보다 한 단계 더 컴팩트(24px)
+   ※ input 에 browser-default 필수 — 누락 시 Materialize teal focus 가 2줄로 보임 (충돌 카탈로그 #7) */
+.detail-section .cpx-ed-table td .aniInput input {
+  height: 24px !important;
+  padding: 0 5px !important;
+  font-size: 13px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* Event 행 — 텍스트 입력이라 좌측 정렬 */
+.detail-section .cpx-ed-table td .aniInput input.cpx-ed-text {
+  text-align: left;
+}
+/* 공용 범례 — 차트 위 한 줄 (Highcharts legend 비활성)
+   흰 박스로 감쌈 — 페이지 배경에 묻혀 안 보인다는 피드백 (2026-06-05) */
+.detail-section .cpx-chart-legend {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  margin-left: auto; /* 우측 정렬 */
+  gap: 20px;
+  margin-bottom: 10px;
+  padding: 10px 15px;
+  font-size: 13px;
+  color: var(--c-text-soft);
+  background: #fff;
+  border: 1px solid #f0ede3; /* 차트 카드와 동일 보더 톤 */
+  border-radius: var(--radius-sm);
+}
+.detail-section .cpx-chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.detail-section .cpx-lg-line {
+  width: 18px; height: 0;
+  border-top: 2px solid;
+}
+.detail-section .cpx-lg-plan   { border-top-style: dashed; border-top-color: #5d80a3; } /* baltic — 차트 Plan 선과 동기 */
+.detail-section .cpx-lg-actual { border-top-color: #B89656; border-top-width: 3px; }
+.detail-section .cpx-lg-area {
+  width: 12px; height: 12px;
+  border-radius: 3px;
+}
+.detail-section .cpx-lg-behind { background: rgba(217, 119, 87, 0.30); }
+.detail-section .cpx-lg-ahead  { background: rgba(139, 168, 196, 0.35); }
+/* 지연 배경 띠 — Gap Area(terracotta)와 색 분리: --c-warn khaki. 칩은 차트(0.15)보다 진하게 */
+.detail-section .cpx-lg-dzone {
+  background: rgba(212, 204, 130, 0.40);
+  border: 1px dashed rgba(170, 158, 80, 0.60);
+}
+
+/* Milestone Timeline — 가로 9개, 3색 dot (on-time sage / delayed danger / ahead blue)
+   차트 카드와 동일 박스 처리 (2026-06-05) */
+.detail-section .cpx-tl {
+  position: relative;
+  padding: 20px 15px 15px;
+  margin-bottom: 25px;
+  background: #fff;
+  border: 1px solid #f0ede3;
+  border-radius: var(--radius-md);
+}
+.detail-section .cpx-tl-line {
+  position: absolute;
+  top: 25px; /* dot(12px) 중심 통과 — padding-top 20 + dot 반지름 */
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  background: #eee9dc;
+}
+.detail-section .cpx-tl-items { display: flex; }
+.detail-section .cpx-tl-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  position: relative;
+}
+.detail-section .cpx-tl-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #899f6a; /* on-time 기본 */
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
+}
+.detail-section .cpx-tl-dot.delayed { background: var(--c-danger); }
+.detail-section .cpx-tl-dot.ahead   { background: #8BA8C4; }
+.detail-section .cpx-tl-date  { font-size: 13px; color: var(--c-text-mute); }
+.detail-section .cpx-tl-label { font-size: 13px; font-weight: 600; color: var(--c-text); line-height: 1.35; }
+.detail-section .cpx-tl-note  { font-size: 13px; font-weight: 600; min-height: 18px; }
+.detail-section .cpx-tl-note.n-on-time { color: #899f6a; }
+.detail-section .cpx-tl-note.n-delayed { color: var(--c-danger); }
+.detail-section .cpx-tl-note.n-ahead   { color: #5d80a3; }
+
+/* ---- 14. Stage 10 — Budget/Performance compare 3-box + Expected vs Actual 표 */
+.detail-section .cpx-cmp-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+.detail-section .cpx-cmp-box {
+  background: #fff;
+  border: 1px solid #f0ede3; /* 차트 카드 패밀리 */
+  border-radius: var(--radius-md);
+  padding: 15px;
+  text-align: center;
+}
+.detail-section .cpx-cmp-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+.detail-section .cpx-cmp-box.is-actual .cpx-cmp-num { color: var(--c-primary-d); } /* 실적 = bronze (차트 Actual 과 동일 언어) */
+.detail-section .cpx-cmp-box.is-delta.pos .cpx-cmp-num { color: #899f6a; }         /* 달성/절감 = sage */
+.detail-section .cpx-cmp-box.is-delta.neg .cpx-cmp-num { color: var(--c-danger); } /* 미달/초과지출 = viva magenta */
+.detail-section .cpx-cmp-lbl {
+  font-size: 13px;
+  color: var(--c-text-soft);
+  margin-top: 5px;
+}
+/* Expected vs Actual 표 — Actual 컬럼 강조 + Formula 설명 컬럼 */
+.detail-section .cpx-s10-actual { color: var(--c-primary-d); font-weight: 600; }
+.detail-section .cpx-formula-cell { color: var(--c-text-mute); font-size: 13px; }
+
+/* 산식 풀이 밴드 — 원본 formula-box(파란) 를 master-data 웜톤(cpx-findings 어법)으로 복원.
+   박스만 있고 표가 없어 산식이 안 보이는 섹션(Budget vs Actual / Performance / Net Benefit)에 부착 */
+.detail-section .cpx-fbox {
+  display: grid;
+  grid-template-columns: max-content 1fr;  /* 라벨 칼럼 = 가장 긴 라벨 폭 → 한 줄 유지 + expr 정렬 */
+  gap: 6px 14px;
+  padding: 13px 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #fffaf0;
+  border: 1px solid #f0e3c5;
+  border-radius: var(--radius-md);
+  margin: 0 0 25px;   /* cmp-row(margin-bottom 15) 뒤 → 15px gap */
+}
+/* 표(hoo-spec-table, margin-bottom 25) 뒤 밴드는 -10 으로 당겨 동일 15px gap 유지 */
+.detail-section .hoo-spec-table + .cpx-fbox { margin-top: -10px; }
+.detail-section .cpx-flabel {
+  color: var(--c-primary-d);
+  font-weight: 700;
+  white-space: nowrap;   /* 라벨 두 줄 방지 */
+}
+.detail-section .cpx-fexpr {
+  color: var(--c-text-mute);
+  font-family: 'Consolas', 'SUIT', monospace;
+}
+.detail-section .cpx-fexpr b { color: var(--c-primary-d); }
+
+/* ---- 9. Stage 3 — Approval Chain (가로 단계 카드)
+       pm-vnode 글래스 카드 어법 차용. Grade 가 단계 수 결정 (A=4 / B=3 / C=2) */
+.detail-section .cpx-appr-chain {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 25px; /* 다음 섹션(Conditions 등)과 호흡 */
+  padding-top: 10px;   /* 모서리 걸친 상태 뱃지(-8px) 공간 */
+}
+.detail-section .cpx-appr-step {
+  /* 유리판 틴트 — 상태 클래스가 --apg(RGB)/--apg-a(알파)만 갈아끼움 */
+  --apg: 255, 255, 255;
+  --apg-a: 0.40;
+  position: relative;
+  isolation: isolate;
+  /* overflow hidden 금지 — 모서리 걸친 상태 뱃지가 잘림 */
+  flex: 1;
+  min-width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 15px 10px;
+  /* 유리 레이어 — 평평한 유리판: 방향성 광원(좌상단 점광/sweep/베벨) 제거, 균일 막만
+     (입체 카드처럼 보인다는 피드백으로 플랫 전환, 2026-06-05) */
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.20)), /* 균일 유리 막 */
+    rgba(var(--apg), var(--apg-a));
+  /* 보더 — 사방 동일한 중립 유리 엣지 (방향별 밝기 차 없음. 상태색 보더 금지는 유지) */
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-md);
+  text-align: center;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.05),          /* 부유 그림자 — 수직 아래, 방향성 최소 */
+    0 2px 10px rgba(var(--apg), 0.12),       /* 틴트 색 번짐 */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25); /* 균일 내부 헤어라인 (베벨 아님) */
+}
+/* 상태별 틴트 — 완료(초록) / 반려(빨강) / 진행중(파랑) / 대기(기본 흰 유리) / Go-Live(bronze) */
+.detail-section .cpx-appr-step.done     { --apg: 137, 159, 106; --apg-a: 0.26; }
+.detail-section .cpx-appr-step.rejected { --apg: 187, 38, 73;   --apg-a: 0.11; }
+.detail-section .cpx-appr-step.current  { --apg: 139, 168, 196; --apg-a: 0.16; }
+.detail-section .cpx-appr-step.live     { --apg: 184, 150, 86;  --apg-a: 0.20; } /* Stage 9 Go-Live */
+.detail-section .cpx-appr-step.live .cpx-appr-badge { background: var(--c-primary-d); }
+.detail-section .cpx-appr-step.live .cpx-appr-date  { color: var(--c-primary-d); }
+
+/* hover — RGB 색수차(aurora) + 마우스 추적
+   ① 커서 위치 spotlight (--ap-gx/--ap-gy)
+   ② aurora 색띠가 커서를 따라 background-position 이동 (transform 금지 — jitter 방지)
+   JS: bindApprGlass() 가 mousemove 로 변수 갱신 */
+.detail-section .cpx-appr-step::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(120px circle at var(--ap-gx, 50%) var(--ap-gy, 50%),
+      rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0) 70%),
+    linear-gradient(120deg,
+      rgba(255, 107, 157, 0.10) 0%,
+      rgba(192, 132, 252, 0.10) 20%,
+      rgba(110, 168, 254, 0.10) 40%,
+      rgba(78, 205, 196, 0.10) 60%,
+      rgba(255, 230, 109, 0.10) 80%,
+      rgba(255, 107, 157, 0.10) 100%);
+  background-size: 100% 100%, 300% 300%;
+  background-position: 0 0, var(--ap-gx, 50%) var(--ap-gy, 50%);
+  opacity: 0;
+  transition: opacity .3s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+.detail-section .cpx-appr-step:hover::before {
+  opacity: 1;
+}
+.detail-section .cpx-appr-step.rejected .cpx-appr-date { color: var(--c-danger); }
+.detail-section .cpx-appr-step.current  .cpx-appr-date { color: #5d80a3; /* baltic-sea 진한 톤 */ }
+.detail-section .cpx-appr-role {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+.detail-section .cpx-appr-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-soft);
+}
+.detail-section .cpx-appr-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #899f6a; /* st-approved sage — 완료 톤 (상태별 override 아래) */
+}
+/* 상태 뱃지 — 박스 우측 상단 모서리에 걸친 원형 (done 체크 / rejected ✕ / current 모래시계)
+   notification badge 어법: 흰 링 + 모서리 반 걸침 + 입체 그림자 */
+.detail-section .cpx-appr-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #899f6a;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.95); /* 흰 링 */
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.10);
+}
+.detail-section .cpx-appr-badge .material-icons {
+  font-size: 13px;
+  font-weight: bold;
+}
+.detail-section .cpx-appr-step.rejected .cpx-appr-badge { background: var(--c-danger); }
+.detail-section .cpx-appr-step.current  .cpx-appr-badge { background: #8BA8C4; }
+.detail-section .cpx-appr-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--c-text-mute);
+}
+.detail-section .cpx-appr-arrow .material-icons {
+  font-size: 18px;
+}
+/* Stage 7 Payment Schedule — 같은 체인 어법, 결제 카드는 금액이 핵심 값 → 가운데 줄 강조 */
+.detail-section .cpx-pay-chain .cpx-pay-amount {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 카드 최종 결재 결과 밴드 — 폼 양식 밖 단독 표시 */
+.detail-section .cpx-review-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding: 10px 15px;
+  background: rgba(184, 150, 86, 0.06);
+  border: 1px solid rgba(184, 150, 86, 0.18);
+  border-radius: var(--radius-sm);
+}
+.detail-section .cpx-review-band-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-text-soft);
+}
+
+/* ---- 5. 로고 — SVG show_chart 모양 + dot 가 path 따라 좌하→우상 트레이스
+       헤더 배경이 bronze 톤(var(--c-primary)) 이라 highlight cream 으로 떠보이게.
+       선·dot 색: warm cream (#FFEFCB) — bronze 위에서 광선 같은 highlight
+       dot: 두 겹 (큰 radial glow + 작은 흰 안점)
+       애니메이션: SVG <animateMotion> + <mpath> path 좌표 정확히 트래킹 */
+.app-logo .capex-logo-svg,
+.splash-logo .capex-logo-svg {
+  width: 28px;
+  height: 28px;
+  color: #FFEFCB;        /* currentColor → stroke 전파 (warm cream highlight) */
+  display: block;
+}
+

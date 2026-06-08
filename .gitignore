@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Backup files
+*.bak
+*.bak2
+
+# Temp / preview artifacts
+_*.html
+
+# Client-provided reference material (not for public deploy)
+ref/
