@@ -1506,6 +1506,101 @@ function bindLogEditors() {
 }
 
 /* =================================================================
+ * Summary 보고서 모달 — 좌측 초요약과 본문 사이의 1~2장 요약 (2026-06-09)
+ *   데이터/지표는 본문과 동일 소스(calcStage2 live + capexCase). PDF 느낌의 문서 레이아웃.
+ * ================================================================= */
+function renderSummary() {
+  const host = document.getElementById('summaryBody');
+  if (!host) return;
+  const c = capexCase;
+  const s2 = calcStage2();
+  const pbExp = s2.payback != null ? `${s2.payback.toFixed(1)} yr` : '—';
+
+  const approved   = parseMoneyNum(c.stage3.approvedAmount);
+  const actualCost = parseUsdC(c.stage10.budget.actual);
+  const variance   = approved - actualCost;
+  const varRate    = approved > 0 ? Math.abs(variance / approved * 100) : 0;
+  const under      = variance >= 0;
+
+  const roiRow = c.stage10.roiCompare.find(r => r.label === 'ROI (%)');
+  const pbRow  = c.stage10.roiCompare.find(r => r.label === 'Payback Period');
+  const npvRow = c.stage10.roiCompare.find(r => r.label === 'NPV');
+  const tbeW   = c.stage5.vendors.find(v => v.winner);
+  const cbeW   = c.stage6.vendors.find(v => v.winner);
+  const goLive = c.stage9.qualifications.find(q => q.label === 'Go-Live');
+
+  const kpis = [
+    { label: 'Investment',   plan: fmtUsdAuto(approved),       act: c.stage10.budget.actual },
+    { label: 'ROI (annual)', plan: `${s2.roi.toFixed(1)}%`,    act: roiRow.actual },
+    { label: 'Payback',      plan: pbExp,                      act: pbRow.actual },
+    { label: 'NPV (5yr)',    plan: fmtUsdK(s2.npv),            act: npvRow.actual },
+  ];
+  const kpiHtml = kpis.map(k => `
+    <div class="cpx-sum-kpi">
+      <div class="cpx-sum-kpi-label">${k.label}</div>
+      <div class="cpx-sum-kpi-act">${k.act}</div>
+      <div class="cpx-sum-kpi-plan">Plan ${k.plan}</div>
+    </div>`).join('');
+
+  const phases = [
+    ['1',  'Investment Request',     `$ ${c.stage1.estBudget} budget · ${c.stage1.priority} priority · ${c.stage1.requester} (${c.stage1.requestDate})`],
+    ['2',  'Feasibility &amp; ROI',  `Expected ROI ${s2.roi.toFixed(1)}%, payback ${pbExp} · ${c.stage2.reviewResult}`],
+    ['3',  'CAPEX Approval',         `${c.stage3.approvedAmount} approved · ${c.stage3.approvalChain.slice(-1)[0].role} (${c.stage3.date})`],
+    ['4',  'Requirement &amp; Spec', `Ref. ${c.stage4.referenceEquip.split(' ')[0]} · CMMS history reviewed → reflected in new spec`],
+    ['5',  'Technical Bid Eval.',    `${tbeW.name} technically preferred (${tbeW.score})`],
+    ['6',  'Commercial Bid Eval.',   `${cbeW.name} selected · ${cbeW.negotiated} (from ${cbeW.quoted})`],
+    ['7',  'Contract &amp; PO',      `${c.stage7.contractAmount} · ${c.stage7.poNo} · ${c.stage7.vendor}`],
+    ['8',  'Design / Fab / Install', `Overall ${c.stage8.overall.status} · fabrication 3d delayed then recovered`],
+    ['9',  'Commissioning',          `FAT·SAT·IQ·OQ·PQ all passed · Go-Live ${goLive.date}`],
+    ['10', 'Actual ROI Analysis',    `ROI ${roiRow.actual} (vs ${s2.roi.toFixed(1)}%) · payback ${pbRow.actual} · ${varRate.toFixed(1)}% ${under ? 'under' : 'over'} budget`],
+  ];
+  const phaseHtml = phases.map(p => `
+    <div class="cpx-sum-phase">
+      <span class="cpx-sum-phase-no">${p[0]}</span>
+      <div class="cpx-sum-phase-body">
+        <div class="cpx-sum-phase-name">${p[1]}</div>
+        <div class="cpx-sum-phase-desc">${p[2]}</div>
+      </div>
+    </div>`).join('');
+
+  host.innerHTML = `
+    <div class="cpx-summary">
+      <div class="cpx-sum-head">
+        <div class="cpx-sum-head-l">
+          <div class="cpx-sum-kicker">MPM CAPEX · Investment Summary</div>
+          <h1 class="cpx-sum-title">${c.title}</h1>
+          <div class="cpx-sum-meta">${c.id} · ${c.stage1.site} · ${c.stage1.dept} · ${c.classification}</div>
+        </div>
+        <div class="cpx-sum-stamp">
+          <span class="cpx-sum-status">Completed</span>
+          <span class="cpx-sum-asof">${c.lastMod.replace('Last Mod. ', 'as of ')}</span>
+        </div>
+      </div>
+
+      <div class="cpx-sum-section">
+        <h2 class="cpx-sum-h">Executive Summary</h2>
+        <p class="cpx-sum-p">${c.stage1.purpose} ${c.stage10.assessment}</p>
+      </div>
+
+      <div class="cpx-sum-section">
+        <h2 class="cpx-sum-h">Key Outcomes <small>(Plan vs Actual)</small></h2>
+        <div class="cpx-sum-kpis">${kpiHtml}</div>
+        <div class="cpx-sum-note">${under ? 'Under' : 'Over'} budget by ${varRate.toFixed(1)}% (${c.stage10.budget.actual} vs ${fmtUsdAuto(approved)} approved).</div>
+      </div>
+
+      <div class="cpx-sum-section">
+        <h2 class="cpx-sum-h">Process Digest <small>(10 stages)</small></h2>
+        <div class="cpx-sum-phases">${phaseHtml}</div>
+      </div>
+
+      <div class="cpx-sum-section">
+        <h2 class="cpx-sum-h">Lessons Learned</h2>
+        <p class="cpx-sum-p">${c.stage10.lessons}</p>
+      </div>
+    </div>`;
+}
+
+/* =================================================================
  * Stage 8 차트 — Highcharts S-Curve 공통 빌더
  *   Plan(점선 muted) vs Actual(bronze 실선)
  *   지연 구간(actual < plan) terracotta / 선행 구간(actual > plan) baltic blue arearange
@@ -2211,6 +2306,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Stage 8 Change Log / Issues — 행 추가/삭제 (initial 셀렉트는 위 bindSelectChevron 처리) */
   bindLogEditors();
+
+  /* Summary 보고서 모달 — 콘텐츠 렌더 + 트리거/프린트 바인딩 (모달 자체는 위 .modal 루프에서 init) */
+  renderSummary();
+  document.getElementById('btnSummary')?.addEventListener('click', () => {
+    const m = document.getElementById('summaryModal');
+    if (m && window.M) M.Modal.getInstance(m)?.open();
+  });
+  document.getElementById('btnSummaryPrint')?.addEventListener('click', () => window.print());
 
   /* Stage 2 산출식 — 입력(cpxSavings/cpxRevenue/cpxOpCost/cpxEstBudget) 변경 시 재계산 */
   bindStage2Calc();
