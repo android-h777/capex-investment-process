@@ -1220,6 +1220,23 @@
   padding-bottom: 14px;
   margin-bottom: 20px;
 }
+.cpx-summary .ai-badge { margin-bottom: 8px; }
+.cpx-sum-genline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--c-border);
+  font-size: 10.5px;
+  font-style: italic;
+  color: var(--c-text-mute);
+}
+.cpx-sum-genline i {
+  font-size: 13px;
+  color: var(--c-primary-d);
+  font-style: normal;
+}
 .cpx-sum-kicker {
   font-size: 10px;
   letter-spacing: 0.14em;
@@ -1316,6 +1333,11 @@
   color: var(--c-text-mute);
   margin-top: 9px;
 }
+.cpx-sum-chart {
+  width: 100%;
+  height: 215px;
+  margin-top: 2px;
+}
 .cpx-sum-phases {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1349,6 +1371,68 @@
   font-size: 10.5px;
   line-height: 1.4;
   color: var(--c-text-soft);
+}
+
+/* AI 생성 연출 — 오로라 오브 + 단계 텍스트 + 프로그레스 바 */
+.cpx-gen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 15px;
+  min-height: 340px;
+  padding: 44px 24px;
+}
+.cpx-gen-orb {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg,
+    #FF6B9D 0%, #C084FC 20%, #6EA8FE 40%, #4ECDC4 60%, #FFE66D 80%, #FF6B9D 100%);
+  background-size: 280% 280%;
+  animation: auroraShift 6s ease-in-out infinite, cpxGenPulse 1.6s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(192, 132, 252, 0.40);
+}
+.cpx-gen-orb i {
+  color: #fff;
+  font-size: 30px;
+  animation: cpxGenSpin 3.6s linear infinite;
+}
+.cpx-gen-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--c-text);
+}
+.cpx-gen-step {
+  font-size: 12px;
+  color: var(--c-text-mute);
+  min-height: 16px;
+}
+.cpx-gen-bar {
+  width: 240px;
+  max-width: 72%;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--c-border);
+  overflow: hidden;
+}
+.cpx-gen-bar-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #C084FC, #6EA8FE);
+  transition: width 0.4s ease;
+}
+@keyframes cpxGenPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes cpxGenSpin  { to { transform: rotate(360deg); } }
+.cpx-sum-reveal { animation: cpxSumReveal 0.5s ease both; }
+@keyframes cpxSumReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Print → 브라우저 Save as PDF. 모달만 남기고 앱 크롬 숨김 (프린트는 모달 열린 상태에서) */

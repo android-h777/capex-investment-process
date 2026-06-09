@@ -29,6 +29,7 @@ window.initHBtnGlass = function initHBtnGlass(root) {
   scope.querySelectorAll('.hBtn:not(.hBtn-init)').forEach(btn => {
     btn.classList.add('hBtn-init');
     btn.addEventListener('mousemove', (e) => {
+      btn.classList.remove('hBtn-rest');   /* 마우스 다시 올라오면 hover 효과 복구 */
       const rect = btn.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
       const y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -44,6 +45,14 @@ window.initHBtnGlass = function initHBtnGlass(root) {
       btn.style.transition = 'transform .3s ease';
       btn.style.transform = '';
       setTimeout(() => { btn.style.transition = ''; }, 300);
+    });
+    /* 클릭(특히 모달 오픈) 시 커서가 안 움직여 :hover 가 잔류 → 배경(::before) 채워진 채 남음.
+       클릭 즉시 hBtn-rest 로 hover 시각효과 강제 해제 + 포커스/틸트/리플 정리. 다음 mousemove 에서 복구. */
+    btn.addEventListener('click', () => {
+      btn.classList.add('hBtn-rest');
+      btn.style.transform = '';
+      btn.blur();
+      setTimeout(() => btn.querySelectorAll('.waves-ripple').forEach(r => r.remove()), 600);
     });
   });
   /* Materialize Waves 재바인딩 — NodeList 통째 attach 가 toLowerCase 에러로 죽는 케이스
