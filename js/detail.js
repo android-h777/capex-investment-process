@@ -44,7 +44,7 @@ function buildSectionTitleHtml(icon, titleText, st, dateStr) {
   const dateHtml = showDate ? `<span class="section-date">${dateStr}</span>` : '';
   return `<h3 class="section-title">
     <span class="section-title-left"><i class="material-icons">${icon}</i>${titleText}</span>
-    <span class="title-bar-meta">${pillHtml}${dateHtml}</span>
+    <span class="title-bar-meta">${dateHtml}${pillHtml}</span>
   </h3>`;
 }
 
@@ -220,6 +220,17 @@ function bindRoutingGlass() {
   });
 }
 
+/* Stage 2 CCC 결과 카드 — 스크롤스파이 유리판 어법: 마우스 추적 색수차 spotlight(--ccc-gx/gy) */
+function bindCccGlass() {
+  document.querySelectorAll('.cpx-ccc-spy').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--ccc-gx', ((e.clientX - r.left) / r.width)  * 100 + '%');
+      card.style.setProperty('--ccc-gy', ((e.clientY - r.top)  / r.height) * 100 + '%');
+    });
+  });
+}
+
 /* =================================================================
  * Stage Card Glow — .detail-section mousemove → --ds-gx/--ds-gy
  *   (master-data initStageCardGlow, line 284-295 그대로)
@@ -288,16 +299,16 @@ function renderStages() {
 function stageDateFor(key) {
   const c = capexCase;
   switch (key) {
-    case 'request':     return c.stage1?.requestDate;
-    case 'feasibility': return null;
-    case 'approval':    return c.stage3?.date;
-    case 'spec':        return null;
-    case 'tbe':         return null;
-    case 'cbe':         return null;
-    case 'contract':    return null;
-    case 'execution':   return null;
-    case 'commission':  return c.stage9?.qualifications?.find(q => q.label === 'Go-Live')?.date;
-    case 'actual':      return c.stage10?.reviewDate;
+    case 'request':     return c.stage1?.requestDate;     /* Jan 15, 2026 */
+    case 'feasibility': return 'Feb 5, 2026';
+    case 'approval':    return c.stage3?.date;            /* Feb 10, 2026 */
+    case 'spec':        return 'Feb 24, 2026';
+    case 'tbe':         return 'Feb 28, 2026';
+    case 'cbe':         return 'Mar 3, 2026';
+    case 'contract':    return c.stage7?.contractDate;    /* Mar 5, 2026 */
+    case 'execution':   return 'Oct 30, 2026';
+    case 'commission':  return c.stage9?.qualifications?.find(q => q.label === 'Go-Live')?.date; /* Nov 20, 2026 */
+    case 'actual':      return c.stage10?.reviewDate;     /* May 20, 2027 */
   }
   return null;
 }
@@ -796,8 +807,8 @@ function refreshStage2Calc() {
     revenue: parseMoneyNum(get('cpxRevenue')?.value),
     opCost:  capexCase.stage2.opCostIncrease, /* 원본에 입력 필드 없음 — mock 고정값 */
     invest:  parseMoneyNum(get('cpxEstBudget')?.value),
-    cogs:    parseMoneyNum(get('cpxCogs')?.value),
-    dio:     capexCase.stage2.dioReduction, /* 표시 전용 — mock 고정값 */
+    cogs:    capexCase.stage2.annualCogs,     /* CCC 는 read-only 불러온 데이터 — 고정값 */
+    dio:     capexCase.stage2.dioReduction,   /* 표시 전용 — mock 고정값 */
   });
   const f = fmtStage2(c);
   get('cpxRoi').textContent           = f.roi;
@@ -809,14 +820,13 @@ function refreshStage2Calc() {
   get('cpxPayback').textContent       = f.payback;
   get('cpxIrr').textContent           = f.irr;
   get('cpxNpv').textContent           = f.npv;
-  get('cpxWcSavings').textContent     = f.wcSavings;
 
   /* Stage 10 Expected 컬럼도 같은 계산 결과로 동기화 */
   refreshStage10Expected(c);
 }
 
 function bindStage2Calc() {
-  ['cpxSavings', 'cpxRevenue', 'cpxEstBudget', 'cpxCogs'].forEach(id => {
+  ['cpxSavings', 'cpxRevenue', 'cpxEstBudget'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', refreshStage2Calc);
   });
 }
@@ -860,28 +870,29 @@ function renderStage2() {
   const c = calcStage2();
   const f = fmtStage2(c);
 
-  /* CCC — 입력 1(COGS) + 표시 2(DIO/Lead) + WC Savings auto-calc.
-     설명은 별도 행 대신 라벨 옆 인라인(muted) */
-  const cccBody = `
-    <tr class="cpx-row-main"><td>Annual COGS (Cost of Goods Sold)<span class="cpx-inline-note">— Basis for Daily COGS (Annual COGS ÷ 365)</span></td>
-      <td class="hoo-num">
-        <div class="aniInput cpx-money-field">
-          <span class="cpx-money-unit">$</span>
-          <input type="text" id="cpxCogs" class="browser-default cpx-money" value="${d.annualCogs.toLocaleString('en-US')}" inputmode="numeric">
-          <span class="cpx-money-suffix">/yr</span>
-          <span class="focus-border"></span>
-        </div>
-      </td></tr>
-    <tr class="cpx-row-main"><td>DIO (Days Inventory Outstanding) Reduction${tip('DIO = (Avg Inventory ÷ Annual COGS) × 365')}<span class="cpx-inline-note">— Average days inventory stays in warehouse, reduced by this investment</span></td>
-      <td class="hoo-num">-${d.dioReduction.toFixed(1)} days</td></tr>
-    <tr class="cpx-row-main"><td>Lead Time Reduction<span class="cpx-inline-note">— Time saved from production start to finished goods shipment</span></td>
-      <td class="hoo-num">-${d.leadTimeReduction.toFixed(1)} days</td></tr>
-    <tr class="cpx-row-main cpx-result-row"><td>Working Capital Savings${tip('WC Savings = Daily COGS × DIO days saved')}<span class="cpx-inline-note">— Cash freed up by holding less inventory (Daily COGS × DIO days saved)</span></td>
-      <td class="hoo-num" id="cpxWcSavings">${f.wcSavings}</td></tr>`;
+  /* CCC — 전부 외부(ERP/Finance) 에서 불러온 read-only 데이터. 카드로 표시(입력 없음) */
+  const cccCards = `
+    <div class="cpx-ccc-card cpx-ccc-uni">
+      <div class="cpx-ccc-top"><i class="material-icons">inventory_2</i>Annual COGS</div>
+      <div class="cpx-ccc-val">$ ${d.annualCogs.toLocaleString('en-US')}<span class="cpx-ccc-unit">/yr</span></div>
+      <div class="cpx-ccc-note">Basis for Daily COGS (÷ 365)</div>
+    </div>
+    <div class="cpx-ccc-card cpx-ccc-uni">
+      <div class="cpx-ccc-top"><i class="material-icons">warehouse</i>DIO Reduction</div>
+      <div class="cpx-ccc-val">−${d.dioReduction.toFixed(1)}<span class="cpx-ccc-unit">days</span></div>
+      <div class="cpx-ccc-note">Days inventory held in warehouse</div>
+    </div>
+    <div class="cpx-ccc-card cpx-ccc-uni">
+      <div class="cpx-ccc-top"><i class="material-icons">schedule</i>Lead Time Reduction</div>
+      <div class="cpx-ccc-val">−${d.leadTimeReduction.toFixed(1)}<span class="cpx-ccc-unit">days</span></div>
+      <div class="cpx-ccc-note">Production start → shipment</div>
+    </div>
+    <div class="cpx-ccc-card cpx-ccc-spy">
+      <div class="cpx-ccc-top"><i class="material-icons">savings</i>Working Capital Savings</div>
+      <div class="cpx-ccc-val">${fmtUsd(c.wcSavings)}<span class="cpx-ccc-unit">/yr</span></div>
+      <div class="cpx-ccc-note">Daily COGS × DIO days saved</div>
+    </div>`;
 
-  /* Review Result — 이 카드의 결재 결과 (선택 아님) → mr-status 필 */
-  const rrCls = d.reviewResult === 'Approved' ? 'st-approved'
-              : d.reviewResult === 'Rejected' ? 'st-rejected' : 'st-inprogress';
 
   /* 금액 입력 — Est. Budget 과 동일한 cpx-money 패턴 + /yr 단위 고정 */
   const moneyInput = (id, value) => `
@@ -893,13 +904,11 @@ function renderStage2() {
     </div>`;
 
   return `
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Expected CCC (Cash Conversion Cycle) Improvement</h5>
-    <div class="hoo-spec-table">
-      <table class="hoo-table cpx-basis-table">
-        <colgroup><col><col style="width:180px"></colgroup>
-        <tbody>${cccBody}</tbody>
-      </table>
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Expected CCC (Cash Conversion Cycle) Improvement</h5>
+      <span class="cpx-ccc-src"><i class="material-icons">cloud_download</i>Loaded from ERP / Finance</span>
     </div>
+    <div class="cpx-ccc-grid">${cccCards}</div>
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Feasibility & Expected ROI</h5>
     <div class="form-grid">
@@ -926,21 +935,51 @@ function renderStage2() {
 
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>ROI Calculation Basis</h5>
-    <div class="hoo-spec-table">
-      <table class="hoo-table cpx-basis-table">
-        <colgroup><col><col style="width:200px"></colgroup>
-        <tbody>
-          <tr><td>Annual Benefit (Savings + Revenue)${tip('Annual Benefit = Savings + Revenue')}</td><td class="hoo-num" id="cpxAnnualBenefit">${f.annualBenefit}</td></tr>
-          <tr><td>(−) Annual Operating Cost Increase</td><td class="hoo-num" id="cpxOpCostView">${fmtUsd(c.opCost)}</td></tr>
-          <tr><td>Net Annual Benefit${tip('Net Benefit = Savings + Revenue − Operating Cost Increase')}</td><td class="hoo-num" id="cpxNetBenefit">${f.netBenefit}</td></tr>
-          <tr><td>Total Investment${tip('Linked to Stage 1 Est. Budget')}</td><td class="hoo-num" id="cpxTotalInv">${f.invest}</td></tr>
-          <tr class="cpx-result-row"><td>Annual ROI = Net Benefit / Investment${tip('ROI (%) = Net Benefit ÷ Total Investment × 100')}</td><td class="hoo-num" id="cpxRoiBasis">${f.roi}</td></tr>
-          <tr class="cpx-result-row"><td>Payback Period${tip('Payback = Total Investment ÷ Annual Net Benefit')}</td><td class="hoo-num" id="cpxPayback">${f.payback}</td></tr>
-          <tr class="cpx-result-row"><td>IRR (Internal Rate of Return)${tip('IRR = discount rate at which NPV = 0  (Excel IRR)')}</td><td class="hoo-num" id="cpxIrr">${f.irr}</td></tr>
-          <tr class="cpx-result-row"><td>NPV (Net Present Value)${tip('NPV = Σ(CF ÷ (1+r)ⁿ) − Investment  (r=10%, n=5yr)')}</td><td class="hoo-num" id="cpxNpv">${f.npv}</td></tr>
-        </tbody>
-      </table>
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>ROI Calculation Basis</h5>
+      <span class="cpx-ccc-src"><i class="material-icons">calculate</i>Auto-calculated</span>
+    </div>
+    <div class="cpx-ccc-grid cpx-roi-grid">
+      <div class="cpx-ccc-card cpx-ccc-uni">
+        <div class="cpx-ccc-top"><i class="material-icons">trending_up</i>Annual Benefit</div>
+        <div class="cpx-ccc-val" id="cpxAnnualBenefit">${f.annualBenefit}</div>
+        <div class="cpx-ccc-note">Savings + Revenue</div>
+      </div>
+      <div class="cpx-ccc-card cpx-ccc-uni">
+        <div class="cpx-ccc-top"><i class="material-icons">trending_down</i>(−) Op Cost Increase</div>
+        <div class="cpx-ccc-val" id="cpxOpCostView">${fmtUsd(c.opCost)}</div>
+        <div class="cpx-ccc-note">Annual operating cost added</div>
+      </div>
+      <div class="cpx-ccc-card cpx-ccc-uni">
+        <div class="cpx-ccc-top"><i class="material-icons">account_balance</i>Net Annual Benefit</div>
+        <div class="cpx-ccc-val" id="cpxNetBenefit">${f.netBenefit}</div>
+        <div class="cpx-ccc-note">Benefit − Op Cost</div>
+      </div>
+      <div class="cpx-ccc-card cpx-ccc-uni">
+        <div class="cpx-ccc-top"><i class="material-icons">payments</i>Total Investment</div>
+        <div class="cpx-ccc-val" id="cpxTotalInv">${f.invest}</div>
+        <div class="cpx-ccc-note">Linked to Est. Budget</div>
+      </div>
+      <div class="cpx-ccc-card cpx-ccc-uni">
+        <div class="cpx-ccc-top"><i class="material-icons">event_repeat</i>Payback Period</div>
+        <div class="cpx-ccc-val" id="cpxPayback">${f.payback}</div>
+        <div class="cpx-ccc-note">Investment ÷ Net Benefit</div>
+      </div>
+      <div class="cpx-ccc-card cpx-ccc-uni">
+        <div class="cpx-ccc-top"><i class="material-icons">show_chart</i>IRR</div>
+        <div class="cpx-ccc-val" id="cpxIrr">${f.irr}</div>
+        <div class="cpx-ccc-note">Rate where NPV = 0</div>
+      </div>
+      <div class="cpx-ccc-card cpx-ccc-uni">
+        <div class="cpx-ccc-top"><i class="material-icons">account_balance_wallet</i>NPV</div>
+        <div class="cpx-ccc-val" id="cpxNpv">${f.npv}</div>
+        <div class="cpx-ccc-note">r = 10%, n = 5yr</div>
+      </div>
+      <div class="cpx-ccc-card cpx-ccc-spy">
+        <div class="cpx-ccc-top"><i class="material-icons">percent</i>Annual ROI</div>
+        <div class="cpx-ccc-val" id="cpxRoiBasis">${f.roi}</div>
+        <div class="cpx-ccc-note">Net Benefit ÷ Investment</div>
+      </div>
     </div>
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Risk & Review</h5>
@@ -963,17 +1002,16 @@ function renderStage2() {
         <div class="aniInput"><input type="text" class="browser-default" value="${d.riskNote}"><span class="focus-border"></span></div>
       </div>
 
-      <div class="form-group span-2">
-        <label>Attachments</label>
-        ${attachZoneHtml(d.attachments)}
-      </div>
-
     </div>
 
-    <!-- 카드 최종 산출 — 이 단계의 결재 결과 (맨 아래 단독 밴드) -->
-    <div class="cpx-review-band">
-      <span class="cpx-review-band-label">Review Result</span>
-      <span class="mr-status ${rrCls}">${d.reviewResult}</span>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Attachments</h5>
+    ${attachZoneHtml(d.attachments)}
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Review Result / Comments</h5>
+    <div class="form-grid">
+      <div class="form-group span-2">
+        <textarea class="browser-default detail-textarea" placeholder="Enter the feasibility review opinion and decision rationale…">${d.reviewResult}</textarea>
+      </div>
     </div>
   `;
 }
@@ -1267,12 +1305,8 @@ function renderStage4() {
       <div id="cpxKeyFindingsEditor"></div>
     </div>
 
-    <div class="form-grid">
-      <div class="form-group span-2">
-        <label>Attachments</label>
-        ${attachZoneHtml(d.attachments)}
-      </div>
-    </div>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Attachments</h5>
+    ${attachZoneHtml(d.attachments)}
   `;
 }
 
@@ -1334,9 +1368,9 @@ function renderStage5() {
       </table>
     </div>
 
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Decision / Review Comments</h5>
     <div class="form-grid">
       <div class="form-group span-2">
-        <label>Decision / Review Comments</label>
         <textarea class="browser-default detail-textarea" placeholder="Enter technical review comments and the selection rationale…">${d.decision}</textarea>
       </div>
     </div>
@@ -1415,9 +1449,9 @@ function renderStage6() {
       </div>
     </div>
 
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Final Selection / Review Comments</h5>
     <div class="form-grid">
       <div class="form-group span-2">
-        <label>Final Selection / Review Comments</label>
         <textarea class="browser-default detail-textarea" placeholder="Enter the final selection rationale and commercial review comments…">${winner.name} — Contract Amount ${winner.negotiated}</textarea>
       </div>
     </div>
@@ -2088,10 +2122,10 @@ function renderStage9() {
     <h5 class="bi-block-title"><span class="bi-bar"></span>Qualification Steps <small>(All must pass before handover)</small></h5>
     <div class="cpx-appr-chain cpx-qual-chain">${qualSteps}</div>
 
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Result / Review Comments</h5>
     <div class="form-grid">
       <div class="form-group span-2">
-        <label>Result</label>
-        <div class="aniInput"><input type="text" class="browser-default" value="${d.result}"><span class="focus-border"></span></div>
+        <textarea class="browser-default detail-textarea" placeholder="Enter commissioning result and handover notes…">${d.result}</textarea>
       </div>
     </div>
   `;
@@ -2300,11 +2334,10 @@ function renderStage10() {
         <label>Review Date</label>
         <div class="aniInput"><input type="text" class="browser-default cpx-date" value="${d.reviewDate}"><span class="focus-border"></span></div>
       </div>
-      <div class="form-group span-2">
-        <label>Attachments</label>
-        ${attachZoneHtml(d.attachments)}
-      </div>
     </div>
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Attachments</h5>
+    ${attachZoneHtml(d.attachments)}
   `;
 }
 
@@ -2370,6 +2403,22 @@ function formatMoney(str) {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/* money 입력 폭을 값 길이에 맞춰 동적 지정 — 숨김 span 으로 실제 텍스트 폭 측정 */
+let _moneyMeasureEl = null;
+function sizeMoneyInput(input) {
+  if (!_moneyMeasureEl) {
+    _moneyMeasureEl = document.createElement('span');
+    _moneyMeasureEl.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden;white-space:pre;';
+    document.body.appendChild(_moneyMeasureEl);
+  }
+  const cs = getComputedStyle(input);
+  const m = _moneyMeasureEl.style;
+  m.fontSize = cs.fontSize; m.fontWeight = cs.fontWeight; m.fontFamily = cs.fontFamily;
+  m.letterSpacing = cs.letterSpacing; m.fontVariantNumeric = cs.fontVariantNumeric;
+  _moneyMeasureEl.textContent = input.value || input.placeholder || '0';
+  input.style.width = Math.max(24, _moneyMeasureEl.offsetWidth + 12) + 'px';   /* 우측 여유 패딩 */
+}
+
 function bindMoneyInputs(root) {
   const scope = root || document;
   scope.querySelectorAll('input.cpx-money').forEach(input => {
@@ -2378,6 +2427,7 @@ function bindMoneyInputs(root) {
 
     /* 초기값 정규화 (data.js에서 들어온 "2,800,000" 등 그대로 통과) */
     input.value = formatMoney(input.value);
+    sizeMoneyInput(input);
 
     /* 영문/특수문자 차단 (컨트롤·내비게이션 키는 허용) */
     input.addEventListener('keydown', (e) => {
@@ -2397,6 +2447,7 @@ function bindMoneyInputs(root) {
       const diff = formatted.length - before.length;
       const newPos = Math.max(0, caretBefore + diff);
       el.setSelectionRange(newPos, newPos);
+      sizeMoneyInput(el);   /* 입력마다 폭 갱신 */
     });
 
     /* paste 시에도 input 이벤트가 자동 트리거 → 별도 핸들러 불필요 */
@@ -2560,6 +2611,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   bindRoutingGlass();
   bindRoutingSpy();
+  bindCccGlass();
   initStageCardGlow();
 
   /* 금액 인풋: 숫자만 + 천단위 콤마 */

@@ -156,7 +156,10 @@
 
 /* ---- 4. 금액 인풋 — $ 단위 고정 + 강조 (Est. Budget, Approved Amount 등 핵심 금액) */
 .aniInput.cpx-money-field {
-  display: flex;
+  display: inline-flex;          /* 내용 너비로 — 칸 전체를 채우지 않음 */
+  width: auto;
+  max-width: 100%;
+  align-self: flex-start;        /* form-group(세로 flex) 안에서 좌측에 붙음 */
   align-items: stretch;
   padding-left: 0;
 }
@@ -165,17 +168,18 @@
   display: flex;
   align-items: center;
   padding-left: 8px;
-  padding-right: 4px;
+  padding-right: 1px;            /* $ 를 숫자에 밀착 */
   font-size: 14px;
   font-weight: 700;
   color: var(--c-primary-d);  /* bronze 강조 */
   font-variant-numeric: tabular-nums;
 }
 .aniInput.cpx-money-field input.cpx-money {
-  flex: 1;
-  min-width: 0;
-  padding-left: 2px !important;  /* $ 와 살짝 띄움 */
-  text-align: right;
+  flex: 0 0 auto;                /* 칸을 늘리지 않음 — 폭은 JS 가 값 길이에 맞춰 지정 */
+  width: 7ch;
+  min-width: 2ch;
+  padding-left: 1px !important;
+  text-align: left;             /* $ 바로 뒤부터 숫자 */
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 15px;               /* 다른 input(13px)보다 살짝 크게 강조 */
@@ -678,6 +682,79 @@
 .hBtn.cpx-ai-loading { pointer-events: none; opacity: 0.85; }
 .hBtn.cpx-ai-loading i { animation: cpxGenSpin 1s linear infinite; }
 
+/* Stage 2 CCC — 외부(ERP/Finance) 불러온 read-only 데이터를 '색유리판' 카드로 표시 */
+.detail-section .cpx-ccc-src {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; color: var(--c-text-mute);
+}
+.detail-section .cpx-ccc-src i { font-size: 14px; color: var(--c-primary-d); }
+.detail-section .cpx-ccc-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-bottom: 25px;
+}
+/* 색유리판 — 반투명 컬러 틴트 + 백드롭 블러 + 광택 하이라이트 */
+.detail-section .cpx-ccc-card {
+  position: relative;
+  padding: 13px 15px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-top-color: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  box-shadow: 0 5px 16px rgba(60,60,60,0.08), inset 0 1px 0 rgba(255,255,255,0.65);
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.detail-section .cpx-ccc-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 45%);
+}
+.detail-section .cpx-ccc-card > * { position: relative; z-index: 1; }
+.detail-section .cpx-ccc-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 24px rgba(60,60,60,0.13), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.detail-section .cpx-ccc-top {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+  font-weight: 700; color: var(--c-text-soft);
+}
+.detail-section .cpx-ccc-top i { font-size: 15px; }
+.detail-section .cpx-ccc-val {
+  font-size: 18px; font-weight: 800; color: var(--c-text);
+  margin: 5px 0 3px; font-variant-numeric: tabular-nums;
+}
+.detail-section .cpx-ccc-unit { font-size: 11px; font-weight: 600; color: var(--c-text-mute); margin-left: 3px; }
+.detail-section .cpx-ccc-note { font-size: 9.5px; line-height: 1.4; color: var(--c-text-mute); }
+/* 1·2·3 — 동일 블루 유리 틴트로 통일 (CCC) */
+.detail-section .cpx-ccc-uni { background: linear-gradient(135deg, rgba(93,128,163,0.22), rgba(93,128,163,0.07)); }
+.detail-section .cpx-ccc-uni .cpx-ccc-val,
+.detail-section .cpx-ccc-uni .cpx-ccc-top i { color: #41617f; }
+/* ROI Basis 그리드 — CCC(블루)와 구분되게 세이지 그린 유리로 */
+.detail-section .cpx-roi-grid .cpx-ccc-uni { background: linear-gradient(135deg, rgba(122,148,80,0.22), rgba(122,148,80,0.07)); }
+.detail-section .cpx-roi-grid .cpx-ccc-uni .cpx-ccc-val,
+.detail-section .cpx-roi-grid .cpx-ccc-uni .cpx-ccc-top i { color: #5e7e3c; }
+
+/* 4 — 좌측 스크롤스파이 유리판 어법 이식: 흰 유리 + 색수차 spotlight(마우스 추적) + bronze */
+.detail-section .cpx-ccc-spy {
+  background: rgba(255,255,255,0.6);
+  border-color: rgba(255,255,255,0.85);
+  box-shadow: 0 5px 16px rgba(184,150,86,0.32), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.detail-section .cpx-ccc-spy::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 150px 80px at var(--ccc-gx,50%) var(--ccc-gy,50%),
+      rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.08) 40%, transparent 70%),
+    conic-gradient(from 0deg at var(--ccc-gx,50%) var(--ccc-gy,50%),
+      rgba(255,0,0,0) 0%, rgba(255,0,0,0.05) 8%, rgba(255,165,0,0.05) 16%, rgba(255,255,0,0.07) 24%,
+      rgba(0,255,0,0.07) 33%, rgba(0,200,255,0.07) 42%, rgba(0,100,255,0.07) 50%, rgba(130,0,255,0.07) 58%,
+      rgba(255,0,200,0.05) 66%, rgba(255,0,0,0.05) 75%, rgba(255,0,0,0) 83%, transparent 100%);
+}
+.detail-section .cpx-ccc-spy .cpx-ccc-val,
+.detail-section .cpx-ccc-spy .cpx-ccc-top i { color: #8b6f40; }
+
 /* AI 버튼 오오라 — auroraShift 그라데이션 글로우를 버튼 뒤에 (AI Summary / AI Recommend) */
 .cpx-ai-aura-wrap { position: relative; display: inline-flex; isolation: isolate; }
 .cpx-ai-aura-wrap::before {
@@ -1018,13 +1095,34 @@
   gap: 15px;
   margin-bottom: 15px;
 }
+/* 색유리판 — 반투명 틴트 + 백드롭 블러 + 광택 (Stage 10 비교 박스) */
 .detail-section .cpx-cmp-box {
-  background: #fff;
-  border: 1px solid #f0ede3; /* 차트 카드 패밀리 */
+  position: relative;
+  background: linear-gradient(135deg, rgba(93,128,163,0.16), rgba(93,128,163,0.05));  /* 기본(Expected) 옅은 블루 유리 */
+  border: 1px solid rgba(255,255,255,0.55);
+  border-top-color: rgba(255,255,255,0.85);
   border-radius: var(--radius-md);
   padding: 15px;
   text-align: center;
+  overflow: hidden;
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  box-shadow: 0 5px 16px rgba(60,60,60,0.07), inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: transform .2s ease, box-shadow .2s ease;
 }
+.detail-section .cpx-cmp-box::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 45%);
+}
+.detail-section .cpx-cmp-box > * { position: relative; z-index: 1; }
+.detail-section .cpx-cmp-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 22px rgba(60,60,60,0.12), inset 0 1px 0 rgba(255,255,255,0.78);
+}
+/* 변형별 유리 틴트 */
+.detail-section .cpx-cmp-box.is-actual    { background: linear-gradient(135deg, rgba(184,150,86,0.24), rgba(184,150,86,0.07)); }
+.detail-section .cpx-cmp-box.is-delta.pos { background: linear-gradient(135deg, rgba(122,148,80,0.24), rgba(122,148,80,0.07)); }
+.detail-section .cpx-cmp-box.is-delta.neg { background: linear-gradient(135deg, rgba(212,95,95,0.22), rgba(212,95,95,0.06)); }
 .detail-section .cpx-cmp-num {
   font-size: 20px;
   font-weight: 700;
