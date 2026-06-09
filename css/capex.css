@@ -659,6 +659,23 @@
 .detail-section .cpx-findings-editor .ql-editor strong {
   color: var(--c-primary-d);
 }
+/* AI 추천 생성 연출 — 에디터 안 "생성 중" 텍스트 + 스파클, 버튼 로딩 스핀 */
+.detail-section .cpx-findings-editor .ql-editor .cpx-kf-gen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--c-text-mute);
+  font-style: italic;
+}
+.cpx-kf-spark {
+  display: inline-block;
+  color: var(--c-primary-d);
+  font-style: normal;
+  animation: cpxGenPulse 1.1s ease-in-out infinite;
+}
+.hBtn.cpx-ai-loading { pointer-events: none; opacity: 0.85; }
+.hBtn.cpx-ai-loading i { animation: cpxGenSpin 1s linear infinite; }
 /* 테이블 블록 아래 호흡 (다음 bi-block-title 과의 간격) */
 .detail-section .hoo-spec-table {
   margin-bottom: 25px;

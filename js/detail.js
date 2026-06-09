@@ -512,16 +512,29 @@ function bindSignoffChain() {
 }
 
 /* =================================================================
- * Stage 4 — Key Findings WYSIWYG 에디터 (Quill, 사용자 요청 2026-06-09)
- *   컨테이너(#cpxKeyFindingsEditor)의 초기 HTML(ol) 을 Quill 이 그대로 채택.
- *   toolbar 는 심플하게: 굵게/기울임/밑줄 · 목록 · 링크 · 서식지우기.
- *   ※ Materialize 외 라이브러리 — CLAUDE.md 예외(사용자 명시 요청). CDN 은 detail.html. */
+ * Stage 4 — Key Findings WYSIWYG 에디터 (Quill) + AI 추천 (2026-06-09)
+ *   개념: 이 카드의 모든 정보(Spec / Installed Base / Breakdown / Upgrade History)를
+ *         근거로 AI 가 "최종 신규 스펙"을 추천. 에디터는 빈 상태로 시작 →
+ *         타이틀 우측 "AI Recommend" 클릭 시 생성 연출 후 추천 내용이 스트리밍 채움.
+ *   ※ Materialize 외 라이브러리(Quill) — CLAUDE.md 예외(사용자 요청). CDN 은 detail.html. */
+let keyFindingsQuill = null;
+let keyFindingsGenTimer = null;
+
+function kfRecommendedItems() {
+  /* keyFindings("관찰 → 신규 스펙") 를 li 배열로. act 부분 <strong> bronze 강조 */
+  return capexCase.stage4.keyFindings.map((s) => {
+    const idx = s.lastIndexOf(' → ');
+    const obs = idx >= 0 ? s.slice(0, idx) : s;
+    const act = idx >= 0 ? s.slice(idx + 3) : '';
+    return `<li>${obs}${act ? ` → <strong>${act}</strong>` : ''}</li>`;
+  });
+}
 function bindKeyFindingsEditor() {
   const el = document.getElementById('cpxKeyFindingsEditor');
   if (!el || typeof Quill === 'undefined') return;
-  new Quill(el, {
+  keyFindingsQuill = new Quill(el, {
     theme: 'snow',
-    placeholder: 'Key findings and how they are reflected in the new specification…',
+    placeholder: 'Click "AI Recommend" to draft the new specification from this stage’s data…',
     modules: {
       toolbar: [
         ['bold', 'italic', 'underline'],
@@ -531,6 +544,53 @@ function bindKeyFindingsEditor() {
       ],
     },
   });
+  document.getElementById('cpxKfAiBtn')?.addEventListener('click', generateKeyFindings);
+}
+function generateKeyFindings() {
+  const q = keyFindingsQuill;
+  const btn = document.getElementById('cpxKfAiBtn');
+  if (!q || keyFindingsGenTimer) return;   /* 생성 중 재진입 방지 */
+  const items = kfRecommendedItems();
+  const steps = [
+    'Analyzing breakdown &amp; failure history…',
+    'Reviewing improvement &amp; upgrade history…',
+    'Cross-checking engineering spec &amp; utilities…',
+    'Drafting recommended new specification…',
+  ];
+  const setLabel = (t) => { const l = btn && btn.querySelector('.label'); if (l) l.textContent = t; };
+  /* innerHTML 직접 주입 시 Quill 이 .ql-blank 를 못 떼서 placeholder 가 겹침 → 수동 제거 */
+  const setHtml = (html) => { q.root.innerHTML = html; q.root.classList.remove('ql-blank'); };
+  const genLine = (txt) => setHtml(`<p class="cpx-kf-gen"><span class="cpx-kf-spark">✦</span> ${txt}</p>`);
+
+  if (btn) btn.classList.add('cpx-ai-loading');
+  setLabel('Generating…');
+  q.disable();
+  genLine(steps[0]);
+
+  let si = 0, shown = 0;
+  const stepTick = () => {
+    si++;
+    if (si < steps.length) {
+      genLine(steps[si]);
+      keyFindingsGenTimer = setTimeout(stepTick, 540);
+    } else {
+      setHtml('<ol></ol>');
+      keyFindingsGenTimer = setTimeout(streamTick, 360);
+    }
+  };
+  const streamTick = () => {
+    shown++;
+    setHtml(`<ol>${items.slice(0, shown).join('')}</ol>`);
+    if (shown < items.length) {
+      keyFindingsGenTimer = setTimeout(streamTick, 440);
+    } else {
+      keyFindingsGenTimer = null;
+      q.enable();
+      if (btn) btn.classList.remove('cpx-ai-loading');
+      setLabel('Regenerate');
+    }
+  };
+  keyFindingsGenTimer = setTimeout(stepTick, 480);
 }
 
 /* =================================================================
@@ -712,6 +772,14 @@ function renderStage2() {
     </div>`;
 
   return `
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Expected CCC (Cash Conversion Cycle) Improvement</h5>
+    <div class="hoo-spec-table">
+      <table class="hoo-table cpx-basis-table">
+        <colgroup><col><col style="width:180px"></colgroup>
+        <tbody>${cccBody}</tbody>
+      </table>
+    </div>
+
     <h5 class="bi-block-title"><span class="bi-bar"></span>Feasibility & Expected ROI</h5>
     <div class="form-grid">
 
@@ -751,14 +819,6 @@ function renderStage2() {
           <tr class="cpx-result-row"><td>IRR (Internal Rate of Return)${tip('IRR = discount rate at which NPV = 0  (Excel IRR)')}</td><td class="hoo-num" id="cpxIrr">${f.irr}</td></tr>
           <tr class="cpx-result-row"><td>NPV (Net Present Value)${tip('NPV = Σ(CF ÷ (1+r)ⁿ) − Investment  (r=10%, n=5yr)')}</td><td class="hoo-num" id="cpxNpv">${f.npv}</td></tr>
         </tbody>
-      </table>
-    </div>
-
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Expected CCC (Cash Conversion Cycle) Improvement</h5>
-    <div class="hoo-spec-table">
-      <table class="hoo-table cpx-basis-table">
-        <colgroup><col><col style="width:180px"></colgroup>
-        <tbody>${cccBody}</tbody>
       </table>
     </div>
 
@@ -1009,16 +1069,6 @@ function renderStage4() {
       </tr>`;
   }).join('');
 
-  /* Key Findings — "관찰 → 신규 스펙 반영" 을 WYSIWYG(Quill) 초기 콘텐츠로.
-     act(신규 스펙) 부분은 <strong> → CSS 에서 bronze 강조 유지.
-     구분자는 ' → '(공백 포함) 기준 — 내부 '18.5→22kW' 오인 방지 (마지막 화살표 사용) */
-  const findingItems = d.keyFindings.map((s) => {
-    const idx = s.lastIndexOf(' → ');
-    const obs = idx >= 0 ? s.slice(0, idx) : s;
-    const act = idx >= 0 ? s.slice(idx + 3) : '';
-    return `<li>${obs}${act ? ` → <strong>${act}</strong>` : ''}</li>`;
-  }).join('');
-
   return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>Requirement &amp; Specification</h5>
     <div class="form-grid">
@@ -1085,9 +1135,14 @@ function renderStage4() {
       </table>
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Key Findings → Reflected in New Specification</h5>
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Key Findings → Reflected in New Specification</h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="cpxKfAiBtn"><i class="material-icons">auto_awesome</i><span class="label">AI Recommend</span></a>
+      </div>
+    </div>
     <div class="cpx-findings-editor">
-      <div id="cpxKeyFindingsEditor"><ol>${findingItems}</ol></div>
+      <div id="cpxKeyFindingsEditor"></div>
     </div>
 
     <div class="form-grid">
