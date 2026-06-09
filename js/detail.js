@@ -520,18 +520,40 @@ function bindSignoffChain() {
 let keyFindingsQuill = null;
 let keyFindingsGenTimer = null;
 
+/* Quill 커스텀 블롯 — figure 쌍을 '편집 불가 블록 임베드'로 등록해, Quill 정규화에도
+   제거되지 않고 에디터 콘텐츠 안에 그대로 유지되게 함 (img/svg 도 임베드 내부라 안전). */
+function registerKfFigureBlot() {
+  if (typeof Quill === 'undefined' || Quill._kfFigReg) return;
+  const BlockEmbed = Quill.import('blots/block/embed');
+  class KfFigureBlot extends BlockEmbed {
+    static create(value) {
+      const node = super.create();
+      node.setAttribute('data-fig', value);
+      node.setAttribute('contenteditable', 'false');
+      node.innerHTML = kfFigure(Number(value));
+      return node;
+    }
+    static value(node) { return node.getAttribute('data-fig'); }
+  }
+  KfFigureBlot.blotName = 'kffigure';
+  KfFigureBlot.tagName = 'div';
+  KfFigureBlot.className = 'cpx-kf-figblot';
+  Quill.register(KfFigureBlot);
+  Quill._kfFigReg = true;
+}
 function kfRecommendedItems() {
-  /* keyFindings("관찰 → 신규 스펙") 를 li 배열로. act 부분 <strong> bronze 강조 */
-  return capexCase.stage4.keyFindings.map((s) => {
+  /* keyFindings("관찰 → 신규 스펙") 를 번호 단락 배열로 (블록 임베드 끼우기 쉽게). act <strong> bronze */
+  return capexCase.stage4.keyFindings.map((s, i) => {
     const idx = s.lastIndexOf(' → ');
     const obs = idx >= 0 ? s.slice(0, idx) : s;
     const act = idx >= 0 ? s.slice(idx + 3) : '';
-    return `<li>${obs}${act ? ` → <strong>${act}</strong>` : ''}</li>`;
+    return `<p>${i + 1}. ${obs}${act ? ` → <strong>${act}</strong>` : ''}</p>`;
   });
 }
 function bindKeyFindingsEditor() {
   const el = document.getElementById('cpxKeyFindingsEditor');
   if (!el || typeof Quill === 'undefined') return;
+  registerKfFigureBlot();
   keyFindingsQuill = new Quill(el, {
     theme: 'snow',
     placeholder: 'Click "AI Recommend" to draft the new specification from this stage’s data…',
@@ -545,6 +567,7 @@ function bindKeyFindingsEditor() {
     },
   });
   document.getElementById('cpxKfAiBtn')?.addEventListener('click', generateKeyFindings);
+  document.getElementById('cpxKfFigBtn')?.addEventListener('click', addKeyFindingFigures);
 }
 function generateKeyFindings() {
   const q = keyFindingsQuill;
@@ -574,13 +597,12 @@ function generateKeyFindings() {
       genLine(steps[si]);
       keyFindingsGenTimer = setTimeout(stepTick, 540);
     } else {
-      setHtml('<ol></ol>');
       keyFindingsGenTimer = setTimeout(streamTick, 360);
     }
   };
   const streamTick = () => {
     shown++;
-    setHtml(`<ol>${items.slice(0, shown).join('')}</ol>`);
+    setHtml(items.slice(0, shown).join(''));
     if (shown < items.length) {
       keyFindingsGenTimer = setTimeout(streamTick, 440);
     } else {
@@ -591,6 +613,104 @@ function generateKeyFindings() {
     }
   };
   keyFindingsGenTimer = setTimeout(stepTick, 480);
+}
+
+/* 사용자 단계 — AI 가 텍스트 초안을 잡으면, 사용자가 Figure(사진 + 기술 다이어그램)를
+   에디터 콘텐츠 안 각 finding(li) 아래에 추가해 완성. 참조 도식 이식, 사진은 외부 URL+폴백.
+   kfFigure(i): finding i 의 figure 쌍 HTML (0·1 만 도식 보유). */
+function kfFigure(i) {
+  if (i > 1) return '';
+  const fig1svg = `
+    <svg class="cpx-kf-figsvg" viewBox="0 0 320 160">
+      <defs>
+        <linearGradient id="kfSteelG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#A0AEC0"/><stop offset="50%" stop-color="#CBD5E1"/><stop offset="100%" stop-color="#94A3B8"/></linearGradient>
+        <linearGradient id="kfGlassG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#93C5FD"/><stop offset="50%" stop-color="#BFDBFE"/><stop offset="100%" stop-color="#93C5FD"/></linearGradient>
+        <marker id="kfArrDown" markerWidth="6" markerHeight="6" refX="3" refY="5" orient="auto"><path d="M0,0 L6,0 L3,6 Z" fill="#DC2626"/></marker>
+        <marker id="kfArrUp" markerWidth="6" markerHeight="6" refX="3" refY="1" orient="auto"><path d="M0,6 L6,6 L3,0 Z" fill="#2563EB"/></marker>
+      </defs>
+      <path d="M60 15 L60 130 Q60 145 80 145 L240 145 Q260 145 260 130 L260 15" fill="url(#kfSteelG)" stroke="#64748B" stroke-width="1.5"/>
+      <text x="50" y="80" text-anchor="end" font-size="8" fill="#64748B" transform="rotate(-90,50,80)">Steel Shell (25mm)</text>
+      <path d="M72 15 L72 125 Q72 138 88 138 L232 138 Q248 138 248 125 L248 15" fill="url(#kfGlassG)" stroke="#3B82F6" stroke-width="1" stroke-dasharray="4,2"/>
+      <text x="160" y="28" text-anchor="middle" font-size="9" fill="#1E40AF" font-weight="600">Glass Lining (2.0mm)</text>
+      <rect x="80" y="50" width="160" height="82" rx="4" fill="#DBEAFE" opacity="0.5"/>
+      <text x="160" y="95" text-anchor="middle" font-size="8" fill="#3B82F6" opacity="0.7">Process Fluid</text>
+      <path d="M155 32 L160 45 L152 58 L158 72 L150 88 L156 100 L148 115" fill="none" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="155" cy="32" r="3" fill="#DC2626"/><circle cx="148" cy="115" r="3" fill="#DC2626"/>
+      <line x1="158" y1="70" x2="215" y2="52" stroke="#DC2626" stroke-width="0.8" stroke-dasharray="3,2"/>
+      <rect x="215" y="42" width="90" height="22" rx="3" fill="#FEF2F2" stroke="#DC2626" stroke-width="1"/>
+      <text x="260" y="56" text-anchor="middle" font-size="8" fill="#DC2626" font-weight="700">CRACK — $ 82K</text>
+      <text x="95" y="46" font-size="8" fill="#DC2626" font-weight="700">250°C</text>
+      <path d="M92 48 L92 62" stroke="#DC2626" stroke-width="1.5" marker-end="url(#kfArrDown)"/>
+      <text x="205" y="46" font-size="8" fill="#2563EB" font-weight="700">25°C</text>
+      <path d="M220 62 L220 48" stroke="#2563EB" stroke-width="1.5" marker-end="url(#kfArrUp)"/>
+      <text x="160" y="148" text-anchor="middle" font-size="7" fill="#888">ΔT = 225°C — Thermal Shock Zone</text>
+    </svg>`;
+  const fig2svg = `
+    <svg class="cpx-kf-figsvg" viewBox="0 0 320 160">
+      <text x="160" y="16" text-anchor="middle" font-size="9" fill="#1B365D" font-weight="700">Vibration Trend — RX-1001 Agitator Bearing</text>
+      <line x1="45" y1="25" x2="45" y2="125" stroke="#CBD5E1" stroke-width="1"/>
+      <line x1="45" y1="125" x2="305" y2="125" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="40" y="130" text-anchor="end" font-size="7" fill="#94A3B8">0</text>
+      <text x="40" y="105" text-anchor="end" font-size="7" fill="#94A3B8">1.0</text>
+      <text x="40" y="80" text-anchor="end" font-size="7" fill="#94A3B8">2.0</text>
+      <text x="40" y="55" text-anchor="end" font-size="7" fill="#94A3B8">3.0</text>
+      <text x="12" y="80" text-anchor="middle" font-size="7" fill="#64748B" font-weight="600" transform="rotate(-90,12,80)">mm/s</text>
+      <text x="65" y="138" text-anchor="middle" font-size="6.5" fill="#94A3B8">2021</text>
+      <text x="130" y="138" text-anchor="middle" font-size="6.5" fill="#94A3B8">2022</text>
+      <text x="195" y="138" text-anchor="middle" font-size="6.5" fill="#94A3B8">2023</text>
+      <text x="260" y="138" text-anchor="middle" font-size="6.5" fill="#94A3B8">2024</text>
+      <line x1="45" y1="62" x2="305" y2="62" stroke="#DC2626" stroke-width="1.2" stroke-dasharray="6,3"/>
+      <rect x="255" y="53" width="50" height="14" rx="2" fill="#FEF2F2" stroke="#DC2626" stroke-width="0.8"/>
+      <text x="280" y="63" text-anchor="middle" font-size="7" fill="#DC2626" font-weight="700">2.5 ALARM</text>
+      <line x1="45" y1="75" x2="305" y2="75" stroke="#F59E0B" stroke-width="0.8" stroke-dasharray="4,3"/>
+      <text x="300" y="73" text-anchor="end" font-size="6" fill="#F59E0B">2.0 Warning</text>
+      <polyline points="65,112 95,108 130,100 160,95 195,88 225,82 260,78 285,73" fill="none" stroke="#E87502" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="65" cy="112" r="3" fill="#E87502" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="130" cy="100" r="3" fill="#E87502" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="195" cy="88" r="3" fill="#E87502" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="260" cy="78" r="3" fill="#E87502" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="285" cy="73" r="4" fill="#DC2626" stroke="#fff" stroke-width="1.5"/>
+      <rect x="232" y="59" width="22" height="14" rx="2" fill="#DC2626"/>
+      <text x="243" y="69" text-anchor="middle" font-size="7" fill="#fff" font-weight="700">2.1</text>
+      <line x1="253" y1="68" x2="283" y2="73" stroke="#DC2626" stroke-width="0.8"/>
+      <polyline points="285,73 300,68 310,63" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="310" y="58" font-size="6" fill="#DC2626" font-weight="600">→ Failure</text>
+      <text x="160" y="152" text-anchor="middle" font-size="7" fill="#888">Bearing vibration approaching alarm threshold — replacement required</text>
+    </svg>`;
+  /* 1차 URL 실패 시 폴백 URL 순차 시도 → 모두 실패하면 플레이스홀더 div (사진 누락 방지) */
+  const photo = (urls, alt, ph) => {
+    let h = `this.outerHTML='<div class=&quot;cpx-kf-figph&quot;>${ph}</div>'`;
+    for (let k = urls.length - 1; k >= 1; k--) h = `this.onerror=function(){${h}};this.src='${urls[k]}'`;
+    return `<img class="cpx-kf-figimg" src="${urls[0]}" alt="${alt}" onerror="${h}">`;
+  };
+  if (i === 0) return `<div class="cpx-kf-figpair">`
+    + `<figure class="cpx-kf-fig">${photo(['https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=220&fit=crop', 'https://images.pexels.com/photos/25858432/pexels-photo-25858432.jpeg?auto=compress&w=400&h=220'], 'Glass lined reactor', 'Glass Lined Reactor — reference photo')}`
+    + `<figcaption class="cpx-kf-figcap"><b class="cpx-kf-fignum">Fig 1.</b> Glass lined reactor vessel — crack at thermal stress zone</figcaption></figure>`
+    + `<figure class="cpx-kf-fig">${fig1svg}</figure></div>`;
+  return `<div class="cpx-kf-figpair">`
+    + `<figure class="cpx-kf-fig">${photo(['https://upload.wikimedia.org/wikipedia/commons/6/6a/Chemical_reactor_CSTR_AISI_316.JPG', 'https://images.pexels.com/photos/33514501/pexels-photo-33514501.jpeg?auto=compress&w=400&h=220'], 'CSTR reactor agitator RX-1001', 'RX-1001 agitator — reference photo')}`
+    + `<figcaption class="cpx-kf-figcap"><b class="cpx-kf-fignum">Fig 2.</b> Reactor agitator bearing housing — vibration monitoring point (RX-1001)</figcaption></figure>`
+    + `<figure class="cpx-kf-fig">${fig2svg}</figure></div>`;
+}
+function addKeyFindingFigures() {
+  const q = keyFindingsQuill;
+  if (!q || typeof Quill === 'undefined') return;
+  /* AI 초안 텍스트를 Quill Delta 로 재구성하면서 finding 1·2 뒤에 figure 블록 임베드 삽입.
+     임베드라 Quill 정규화에도 살아남고, 텍스트는 그대로 편집 가능. */
+  const D = Quill.import('delta');
+  const delta = new D();
+  capexCase.stage4.keyFindings.forEach((s, i) => {
+    const idx = s.lastIndexOf(' → ');
+    const obs = idx >= 0 ? s.slice(0, idx) : s;
+    const act = idx >= 0 ? s.slice(idx + 3) : '';
+    delta.insert(`${i + 1}. ${obs}`);
+    if (act) { delta.insert(' → '); delta.insert(act, { bold: true }); }
+    delta.insert('\n');
+    if (i <= 1) delta.insert({ kffigure: String(i) });   /* finding 1·2 뒤 figure 임베드 */
+  });
+  q.setContents(delta, 'api');
+  q.root.classList.remove('ql-blank');
+  document.getElementById('cpxKfFigBar')?.remove();
 }
 
 /* =================================================================
@@ -1138,11 +1258,14 @@ function renderStage4() {
     <div class="bi-block-head">
       <h5 class="bi-block-title"><span class="bi-bar"></span>Key Findings → Reflected in New Specification</h5>
       <div class="bi-block-meta">
-        <a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="cpxKfAiBtn"><i class="material-icons">auto_awesome</i><span class="label">AI Recommend</span></a>
+        <span class="cpx-ai-aura-wrap"><a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="cpxKfAiBtn"><i class="material-icons">auto_awesome</i><span class="label">AI Recommend</span></a></span>
       </div>
     </div>
     <div class="cpx-findings-editor">
       <div id="cpxKeyFindingsEditor"></div>
+    </div>
+    <div class="cpx-kf-figbar" id="cpxKfFigBar">
+      <a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="cpxKfFigBtn"><i class="material-icons">add_photo_alternate</i><span class="label">Add Figures</span></a>
     </div>
 
     <div class="form-grid">
