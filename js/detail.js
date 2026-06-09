@@ -610,6 +610,7 @@ function generateKeyFindings() {
       q.enable();
       if (btn) btn.classList.remove('cpx-ai-loading');
       setLabel('Regenerate');
+      document.getElementById('cpxKfFigBtn')?.classList.remove('cpx-hidden');   /* 초안 생성 후 노출 */
     }
   };
   keyFindingsGenTimer = setTimeout(stepTick, 480);
@@ -710,7 +711,7 @@ function addKeyFindingFigures() {
   });
   q.setContents(delta, 'api');
   q.root.classList.remove('ql-blank');
-  document.getElementById('cpxKfFigBar')?.remove();
+  document.getElementById('cpxKfFigBtn')?.remove();
 }
 
 /* =================================================================
@@ -1258,14 +1259,12 @@ function renderStage4() {
     <div class="bi-block-head">
       <h5 class="bi-block-title"><span class="bi-bar"></span>Key Findings → Reflected in New Specification</h5>
       <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect cpx-hidden" id="cpxKfFigBtn"><i class="material-icons">add_photo_alternate</i><span class="label">Add Figures</span></a>
         <span class="cpx-ai-aura-wrap"><a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="cpxKfAiBtn"><i class="material-icons">auto_awesome</i><span class="label">AI Recommend</span></a></span>
       </div>
     </div>
     <div class="cpx-findings-editor">
       <div id="cpxKeyFindingsEditor"></div>
-    </div>
-    <div class="cpx-kf-figbar" id="cpxKfFigBar">
-      <a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="cpxKfFigBtn"><i class="material-icons">add_photo_alternate</i><span class="label">Add Figures</span></a>
     </div>
 
     <div class="form-grid">
