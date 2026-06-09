@@ -873,24 +873,19 @@ function renderStage2() {
   /* CCC — 전부 외부(ERP/Finance) 에서 불러온 read-only 데이터. 카드로 표시(입력 없음) */
   const cccCards = `
     <div class="cpx-ccc-card cpx-ccc-uni">
-      <div class="cpx-ccc-top"><i class="material-icons">inventory_2</i>Annual COGS</div>
-      <div class="cpx-ccc-val">$ ${d.annualCogs.toLocaleString('en-US')}<span class="cpx-ccc-unit">/yr</span></div>
-      <div class="cpx-ccc-note">Basis for Daily COGS (÷ 365)</div>
-    </div>
-    <div class="cpx-ccc-card cpx-ccc-uni">
       <div class="cpx-ccc-top"><i class="material-icons">warehouse</i>DIO Reduction</div>
       <div class="cpx-ccc-val">−${d.dioReduction.toFixed(1)}<span class="cpx-ccc-unit">days</span></div>
-      <div class="cpx-ccc-note">Days inventory held in warehouse</div>
+      <div class="cpx-ccc-note">Average days inventory stays in warehouse, reduced by this investment</div>
     </div>
     <div class="cpx-ccc-card cpx-ccc-uni">
       <div class="cpx-ccc-top"><i class="material-icons">schedule</i>Lead Time Reduction</div>
       <div class="cpx-ccc-val">−${d.leadTimeReduction.toFixed(1)}<span class="cpx-ccc-unit">days</span></div>
-      <div class="cpx-ccc-note">Production start → shipment</div>
+      <div class="cpx-ccc-note">Time saved from production start to finished goods shipment</div>
     </div>
     <div class="cpx-ccc-card cpx-ccc-spy">
       <div class="cpx-ccc-top"><i class="material-icons">savings</i>Working Capital Savings</div>
-      <div class="cpx-ccc-val">${fmtUsd(c.wcSavings)}<span class="cpx-ccc-unit">/yr</span></div>
-      <div class="cpx-ccc-note">Daily COGS × DIO days saved</div>
+      <div class="cpx-ccc-val">${fmtUsd(c.wcSavings)}</div>
+      <div class="cpx-ccc-note">Cash freed up by holding less inventory (Daily COGS × DIO days saved)</div>
     </div>`;
 
 

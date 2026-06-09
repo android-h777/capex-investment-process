@@ -689,7 +689,7 @@
 }
 .detail-section .cpx-ccc-src i { font-size: 14px; color: var(--c-primary-d); }
 .detail-section .cpx-ccc-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
   margin-bottom: 25px;
 }
 /* 색유리판 — 반투명 컬러 틴트 + 백드롭 블러 + 광택 하이라이트 */
@@ -726,11 +726,15 @@
 }
 .detail-section .cpx-ccc-unit { font-size: 11px; font-weight: 600; color: var(--c-text-mute); margin-left: 3px; }
 .detail-section .cpx-ccc-note { font-size: 9.5px; line-height: 1.4; color: var(--c-text-mute); }
+/* CCC·ROI 카드 — 값 키우고 값·설명 우측정렬 */
+.detail-section .cpx-ccc-grid .cpx-ccc-val { font-size: 24px; text-align: right; }
+.detail-section .cpx-ccc-grid .cpx-ccc-note { text-align: right; }
 /* 1·2·3 — 동일 블루 유리 틴트로 통일 (CCC) */
 .detail-section .cpx-ccc-uni { background: linear-gradient(135deg, rgba(93,128,163,0.22), rgba(93,128,163,0.07)); }
 .detail-section .cpx-ccc-uni .cpx-ccc-val,
 .detail-section .cpx-ccc-uni .cpx-ccc-top i { color: #41617f; }
 /* ROI Basis 그리드 — CCC(블루)와 구분되게 세이지 그린 유리로 */
+.detail-section .cpx-roi-grid { grid-template-columns: repeat(4, 1fr); }
 .detail-section .cpx-roi-grid .cpx-ccc-uni { background: linear-gradient(135deg, rgba(122,148,80,0.22), rgba(122,148,80,0.07)); }
 .detail-section .cpx-roi-grid .cpx-ccc-uni .cpx-ccc-val,
 .detail-section .cpx-roi-grid .cpx-ccc-uni .cpx-ccc-top i { color: #5e7e3c; }
