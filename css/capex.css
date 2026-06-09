@@ -1220,23 +1220,6 @@
   padding-bottom: 14px;
   margin-bottom: 20px;
 }
-.cpx-summary .ai-badge { margin-bottom: 8px; }
-.cpx-sum-genline {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 22px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--c-border);
-  font-size: 10.5px;
-  font-style: italic;
-  color: var(--c-text-mute);
-}
-.cpx-sum-genline i {
-  font-size: 13px;
-  color: var(--c-primary-d);
-  font-style: normal;
-}
 .cpx-sum-kicker {
   font-size: 10px;
   letter-spacing: 0.14em;
@@ -1453,9 +1436,17 @@
     opacity: 1 !important;
     overflow: visible !important;
   }
-  #summaryModal .modal-header .modal-close,
+  #summaryModal .modal-header,
   #summaryModal .modal-footer { display: none !important; }
-  .cpx-summary { max-width: 100%; padding: 0; }
-  .cpx-sum-section { break-inside: avoid; }
+
+  /* 1페이지를 꽉 채우게 — 원본 크기에 가깝게, 살짝만 조정 (온스크린은 영향 없음) */
+  @page { size: A4; margin: 13mm; }
+  .cpx-summary { max-width: 100%; padding: 0; font-size: 12px; }
+  .cpx-sum-section { break-inside: avoid; margin-bottom: 15px; }
+  .cpx-sum-head { margin-bottom: 16px; padding-bottom: 12px; }
+  .cpx-sum-title { font-size: 19px; }
+  .cpx-sum-h { margin-bottom: 9px; }
+  .cpx-sum-chart { height: 185px; }
+  .cpx-sum-phases { gap: 8px 20px; }
 }
 
