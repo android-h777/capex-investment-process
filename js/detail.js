@@ -62,27 +62,88 @@ function applyTitleBar(opts) {
 }
 
 /* =================================================================
- * Stage별 책임자 / 날짜 요약 한 줄 (rt-card name 영역에 표시)
- * — 원본 HTML 의 stage별 핵심 한 줄 정보. 미정의 시 한국어 sub 사용.
+ * 좌측 네비 — Stage 핵심 정보 라인 (rt-card 안에 여러 줄로 표시)
+ *   참조 HTML(nav-output)의 "핵심 한눈" 정보 선택을 우리 데이터로 매핑.
+ *   왼쪽만 읽어도 프로젝트 핵심을 다 취득하는 개념.
+ *   라인 { k?: 라벨, v: 값, sub?: 보조표기, tone?: good|warn|accent|hl }
  * ================================================================= */
-function stageMetaText(key) {
+function stageKeyLines(key) {
   const c = capexCase;
   switch (key) {
-    case 'request':     return `${c.stage1.requester} · ${c.stage1.requestDate}`;
-    case 'feasibility': return `${c.stage2.reviewResult} · ROI ${calcStage2().roi.toFixed(1)}%`;
-    case 'approval':    return `${c.stage3.approvalChain.slice(-1)[0].role} ${c.stage3.approvalChain.slice(-1)[0].name} · ${c.stage3.date}`;
-    case 'spec':        return `Ref. ${c.stage4.referenceEquip.split(' ')[0]} · CMMS reviewed`;
-    case 'tbe':         return `${c.stage5.vendors.find(v => v.winner).name} · ${c.stage5.vendors.find(v => v.winner).score}`;
-    case 'cbe':         return `${c.stage6.vendors.find(v => v.winner).name} · ${c.stage6.vendors.find(v => v.winner).negotiated}`;
-    case 'contract':    return `${c.stage7.poNo} · ${c.stage7.contractAmount}`;
-    case 'execution':   return `Recovered · ${c.stage8.milestones.slice(-1)[0].date}`;
-    case 'commission':  {
-      const goLive = c.stage9.qualifications.find(q => q.label === 'Go-Live');
-      return `Go-Live · ${goLive.date}`;
+    case 'request': return [
+      { k: 'Budget',   v: `$ ${c.stage1.estBudget}`, tone: 'hl' },
+      { k: 'Priority', v: c.stage1.priority },
+    ];
+    case 'feasibility': {
+      const s2 = calcStage2();
+      return [
+        { k: 'ROI',     v: `${s2.roi.toFixed(1)}%`, tone: 'hl' },
+        { k: 'Payback', v: s2.payback != null ? `${s2.payback.toFixed(1)} yr` : '—' },
+      ];
     }
-    case 'actual':      return `ROI ${c.stage10.roiCompare[0].actual} · ${c.stage10.reviewDate}`;
+    case 'approval': return [
+      { v: c.stage3.capexNo, tone: 'hl' },
+      { k: c.stage3.status, v: c.stage3.approvedAmount },
+    ];
+    case 'spec': return [
+      { k: 'Ref.', v: c.stage4.referenceEquip.split(' ')[0], tone: 'hl' },
+      { v: 'CMMS reviewed · findings derived' },
+    ];
+    case 'tbe': {
+      const w = c.stage5.vendors.find(v => v.winner);
+      return [
+        { v: `${w.name} — preferred` },
+        { k: 'Score', v: w.score, tone: 'hl' },
+      ];
+    }
+    case 'cbe': {
+      const w = c.stage6.vendors.find(v => v.winner);
+      return [
+        { v: `${w.name} — selected` },
+        { k: 'Contract', v: w.negotiated, tone: 'hl' },
+      ];
+    }
+    case 'contract': return [
+      { k: 'Amount', v: c.stage7.contractAmount, tone: 'hl' },
+      { v: c.stage7.poNo },
+    ];
+    case 'execution': {
+      /* 원본처럼 4개 단계별 진행 상태 — 라벨(단계)+값(상태). 상태는 간결화('2 days'→'2d', 부연 제거) */
+      const phase = { design: 'Design', procure: 'Procurement', fab: 'Fabrication', install: 'Installation' };
+      const short = (st) => st.replace(/(\d)\s*days?/, '$1d').replace(' (parallel accel.)', '');
+      return c.stage8.subCharts.map(s => ({
+        k: phase[s.key] || s.title,
+        v: short(s.status),
+        tone: /delay/i.test(s.status) ? 'danger' : '',
+      }));
+    }
+    case 'commission': {
+      const goLive = c.stage9.qualifications.find(q => q.label === 'Go-Live');
+      return [
+        { v: 'FAT·SAT·IQ·OQ·PQ — all passed' },
+        { k: 'Go-Live', v: goLive.date, tone: 'hl' },
+      ];
+    }
+    case 'actual': {
+      /* Exp 는 패널과 동일하게 calcStage2() live 산출 (Stage 2 입력 바뀌어도 드리프트 X) */
+      const s2  = calcStage2();
+      const roi = c.stage10.roiCompare.find(r => r.label === 'ROI (%)');
+      const pb  = c.stage10.roiCompare.find(r => r.label === 'Payback Period');
+      const expPb = s2.payback != null ? `${s2.payback.toFixed(1)} yr` : '—';
+      return [
+        { k: 'ROI',     v: roi.actual, sub: `Exp ${s2.roi.toFixed(1)}%`, tone: 'hl' },
+        { k: 'Payback', v: pb.actual,  sub: `Exp ${expPb}` },
+      ];
+    }
   }
-  return '';
+  return [];
+}
+function keyLineHtml(L) {
+  return `<div class="rt-key">`
+    + (L.k ? `<span class="rt-k">${L.k}</span>` : '')
+    + `<span class="rt-v${L.tone ? ' rt-v-' + L.tone : ''}">${L.v}</span>`
+    + (L.sub ? `<span class="rt-vsub">${L.sub}</span>` : '')
+    + `</div>`;
 }
 
 /* =================================================================
@@ -110,7 +171,7 @@ function renderRouting() {
                  : '';
 
     const role = n.label;
-    const metaLine = stageMetaText(n.key) || (n.sub || '');
+    const keyLines = stageKeyLines(n.key).map(keyLineHtml).join('');
 
     html += `<div class="rt-group rt-group-compact">
       <div class="rt-stage">
@@ -118,11 +179,11 @@ function renderRouting() {
         <div class="rt-stage-label">${role}</div>
       </div>
       <div class="rt-cards">
-        <div class="rt-card waves-effect${subCls}" data-stage-key="${n.key}" data-section="${idx}">
+        <div class="rt-card rt-card-keys waves-effect${subCls}" data-stage-key="${n.key}" data-section="${idx}">
           <div class="rt-card-info">
             <span class="rt-role">${role}</span>
-            <span class="rt-name">${metaLine}</span>
           </div>
+          <div class="rt-keys">${keyLines}</div>
         </div>
       </div>
     </div>`;
@@ -370,7 +431,106 @@ function renderStage1() {
       </div>
 
     </div>
+
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Sign-off Chain</h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxSignoffAdd"><i class="material-icons">add</i><span class="label">Add row</span></a>
+      </div>
+    </div>
+    <div class="hoo-spec-table cpx-signoff-table">
+      <table class="hoo-table" id="cpxSignoffTable">
+        <colgroup><col style="width:48px"><col style="width:34%"><col><col style="width:44px"></colgroup>
+        <thead><tr><th>No.</th><th class="hoo-th-key">Role <span class="hoo-req">*</span></th><th class="hoo-th-key">Name</th><th></th></tr></thead>
+        <tbody id="cpxSignoffBody">
+          ${d.signoffChain.map((r, i) => signoffRowHtml(r, i)).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
+}
+
+/* =================================================================
+ * Stage 1 — Sign-off Chain (담당자 지정)
+ *   Role = combo(CPX_MASTER.signoffRoles) / Name = 퀵서치(CPX_MASTER.users)
+ *   행 추가(우상단 Add row) / 행 삭제(hoo-x) — hoo-table 양식 그대로
+ * ================================================================= */
+function signoffRoleOptions(selected) {
+  const roles = (window.CPX_MASTER || CPX_MASTER).signoffRoles || [];
+  return ['<option value="">Select…</option>']
+    .concat(roles.map(r => `<option ${r === selected ? 'selected' : ''}>${r}</option>`))
+    .join('');
+}
+function signoffRowHtml(row, i) {
+  const r = row || {};
+  return `
+    <tr>
+      <td class="hoo-no">${i + 1}</td>
+      <td>
+        <div class="bi-select-wrap">
+          <select class="bi-select browser-default cpx-signoff-role">${signoffRoleOptions(r.role)}</select>
+        </div>
+      </td>
+      <td>
+        <div class="aniInput cpx-qs-field input-field">
+          <input type="text" class="browser-default cpx-quicksearch cpx-signoff-name" value="${r.name || ''}" data-master="users" placeholder="Quick search…" autocomplete="off">
+          <i class="material-icons cpx-qs-ico">search</i>
+          <span class="focus-border"></span>
+        </div>
+      </td>
+      <td class="hoo-x"><i class="material-icons">close</i></td>
+    </tr>`;
+}
+function renumberSignoff(tbody) {
+  tbody.querySelectorAll(':scope > tr').forEach((tr, i) => {
+    const no = tr.querySelector('.hoo-no');
+    if (no) no.textContent = i + 1;
+  });
+}
+function bindSignoffChain() {
+  const table = document.getElementById('cpxSignoffTable');
+  const tbody = document.getElementById('cpxSignoffBody');
+  const addBtn = document.getElementById('cpxSignoffAdd');
+  if (!table || !tbody) return;
+
+  /* 행 추가 — 빈 행 append 후 해당 행만 퀵서치/셀렉트 재바인딩 */
+  addBtn?.addEventListener('click', () => {
+    tbody.insertAdjacentHTML('beforeend', signoffRowHtml({}, tbody.children.length));
+    const tr = tbody.lastElementChild;
+    bindQuickSearch(tr);
+    bindSelectChevron(tr);
+    renumberSignoff(tbody);
+  });
+
+  /* 행 삭제 — hoo-x 이벤트 위임 */
+  tbody.addEventListener('click', (e) => {
+    const x = e.target.closest('.hoo-x');
+    if (!x) return;
+    x.closest('tr')?.remove();
+    renumberSignoff(tbody);
+  });
+}
+
+/* =================================================================
+ * Stage 4 — Key Findings WYSIWYG 에디터 (Quill, 사용자 요청 2026-06-09)
+ *   컨테이너(#cpxKeyFindingsEditor)의 초기 HTML(ol) 을 Quill 이 그대로 채택.
+ *   toolbar 는 심플하게: 굵게/기울임/밑줄 · 목록 · 링크 · 서식지우기.
+ *   ※ Materialize 외 라이브러리 — CLAUDE.md 예외(사용자 명시 요청). CDN 은 detail.html. */
+function bindKeyFindingsEditor() {
+  const el = document.getElementById('cpxKeyFindingsEditor');
+  if (!el || typeof Quill === 'undefined') return;
+  new Quill(el, {
+    theme: 'snow',
+    placeholder: 'Key findings and how they are reflected in the new specification…',
+    modules: {
+      toolbar: [
+        ['bold', 'italic', 'underline'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link'],
+        ['clean'],
+      ],
+    },
+  });
 }
 
 /* =================================================================
@@ -643,11 +803,11 @@ function renderStage2() {
  *           Grade A·B·C → 결재 레벨 결정 (금액 구간별: 이하 VP까지 / 이상 CFO까지)
  *           Budget Code(BUDGET MASTERDATA) / Approval Chain 4단계 / Conditions
  * ================================================================= */
-/* Grade → 결재 단계 수 (PDF: 금액별 결재 레벨 분기. A=CFO까지 / B=VP까지 / C=Finance까지) */
-const CPX_GRADE_LEVELS = { A: 4, B: 3, C: 2 };
+/* Priority → 결재 단계 수 (Stage 1 Priority 를 그대로 재확인. High=CFO까지 / Medium=VP까지 / Low=Finance까지) */
+const CPX_GRADE_LEVELS = { High: 4, Medium: 3, Low: 2 };
 
-function apprChainHtml(grade) {
-  const steps = capexCase.stage3.approvalChain.slice(0, CPX_GRADE_LEVELS[grade] || 4);
+function apprChainHtml(priority) {
+  const steps = capexCase.stage3.approvalChain.slice(0, CPX_GRADE_LEVELS[priority] || 4);
   /* 상태별 유리판: done(초록)/rejected(빨강)/current(파랑)/pending(흰 유리)
      상태 배지는 박스 우측 상단 원형 */
   const badgeIco = { done: 'check', rejected: 'close', current: 'hourglass_top' };
@@ -666,7 +826,7 @@ function apprChainHtml(grade) {
 
 function renderStage3() {
   const d = capexCase.stage3;
-  const grade = d.grade.charAt(0); /* 'A / High' → 'A' */
+  const priority = capexCase.stage1.priority; /* Stage 1 Priority 를 그대로 재확인 (단일 출처) */
 
   return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>CAPEX Approval</h5>
@@ -704,12 +864,13 @@ function renderStage3() {
       </div>
 
       <div class="form-group">
-        <label>Grade${tip('Grade determines approval level — e.g. ≤ $500K up to VP / above to CFO')}</label>
+        <label>Priority</label>
         <div class="bi-select-wrap">
           <select class="bi-select browser-default" id="cpxGrade">
-            <option ${grade === 'A' ? 'selected' : ''}>A / High</option>
-            <option ${grade === 'B' ? 'selected' : ''}>B / Medium</option>
-            <option ${grade === 'C' ? 'selected' : ''}>C / Low</option>
+            <option value="">Select…</option>
+            <option ${priority === 'High' ? 'selected' : ''}>High</option>
+            <option ${priority === 'Medium' ? 'selected' : ''}>Medium</option>
+            <option ${priority === 'Low' ? 'selected' : ''}>Low</option>
           </select>
         </div>
       </div>
@@ -726,7 +887,7 @@ function renderStage3() {
     </div>
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Approval Chain</h5>
-    <div class="cpx-appr-chain" id="cpxApprChain">${apprChainHtml(grade)}</div>
+    <div class="cpx-appr-chain" id="cpxApprChain">${apprChainHtml(priority)}</div>
 
     <div class="form-grid">
       <div class="form-group span-2">
@@ -807,7 +968,7 @@ function bindStage3Grade() {
   const chain = document.getElementById('cpxApprChain');
   if (!sel || !chain) return;
   sel.addEventListener('change', () => {
-    chain.innerHTML = apprChainHtml((sel.value || 'A').charAt(0));
+    chain.innerHTML = apprChainHtml(sel.value || 'High');
     bindApprGlass(chain);
   });
 }
@@ -842,20 +1003,20 @@ function renderStage4() {
     return `
       <tr>
         <td class="hoo-date">${r.date}</td>
-        <td>${r.desc}</td>
+        <td><a href="javascript:;" class="cpx-wo-link">${r.desc}</a></td>
         <td class="hoo-num">${r.cost}</td>
         <td class="${resCls}">${r.result}</td>
       </tr>`;
   }).join('');
 
-  /* Key Findings — "관찰 → 신규 스펙 반영" 구조. → 뒷부분 bronze 강조 */
-  const findingRows = d.keyFindings.map((s, i) => {
-    const [obs, act] = s.split('→');
-    return `
-      <div class="cpx-finding-row">
-        <b class="cpx-finding-no">${i + 1}.</b>
-        <span>${obs.trim()}${act ? ` <b class="cpx-finding-act">→ ${act.trim()}</b>` : ''}</span>
-      </div>`;
+  /* Key Findings — "관찰 → 신규 스펙 반영" 을 WYSIWYG(Quill) 초기 콘텐츠로.
+     act(신규 스펙) 부분은 <strong> → CSS 에서 bronze 강조 유지.
+     구분자는 ' → '(공백 포함) 기준 — 내부 '18.5→22kW' 오인 방지 (마지막 화살표 사용) */
+  const findingItems = d.keyFindings.map((s) => {
+    const idx = s.lastIndexOf(' → ');
+    const obs = idx >= 0 ? s.slice(0, idx) : s;
+    const act = idx >= 0 ? s.slice(idx + 3) : '';
+    return `<li>${obs}${act ? ` → <strong>${act}</strong>` : ''}</li>`;
   }).join('');
 
   return `
@@ -925,7 +1086,9 @@ function renderStage4() {
     </div>
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Key Findings → Reflected in New Specification</h5>
-    <div class="cpx-findings">${findingRows}</div>
+    <div class="cpx-findings-editor">
+      <div id="cpxKeyFindingsEditor"><ol>${findingItems}</ol></div>
+    </div>
 
     <div class="form-grid">
       <div class="form-group span-2">
@@ -943,6 +1106,10 @@ function renderStage4() {
  *                        / Lead Time(납기) / Comment
  *           출력 — 기술적으로 가장 적합한 벤더 선정, 최고 점수 벤더 하이라이트 표시
  * ================================================================= */
+/* 외부 구매 프로그램 진입 URL — TBE/CBE 가 아직 작성 안 됐을 때 바로 가서 신청.
+   ※ 데모 플레이스홀더 — 실제 소싱 시스템 주소로 교체 */
+const CPX_PURCHASING_URL = 'https://purchasing.mpm.com/rfq/new';
+
 function renderStage5() {
   const d = capexCase.stage5;
 
@@ -962,7 +1129,22 @@ function renderStage5() {
     </tr>`).join('');
 
   return `
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Technical Bid Evaluation <small>(Technical merit only — pricing evaluated in Stage 6 CBE)</small></h5>
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Technical Bid Evaluation <small>(Technical merit only — pricing evaluated in Stage 6 CBE)</small></h5>
+      <div class="bi-block-meta">
+        <a href="${CPX_PURCHASING_URL}" target="_blank" rel="noopener" class="hBtn hBtn-sm hViva waves-effect"><i class="material-icons">open_in_new</i><span class="label">Create in Purchasing System</span></a>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group span-2">
+        <label>Reference RFQ</label>
+        <div class="aniInput cpx-qs-field input-field">
+          <input type="text" class="browser-default cpx-quicksearch" value="${d.rfqNo}" data-master="rfqNumbers" placeholder="Quick search…" autocomplete="off">
+          <i class="material-icons cpx-qs-ico">search</i>
+          <span class="focus-border"></span>
+        </div>
+      </div>
+    </div>
     <div class="hoo-spec-table">
       <table class="hoo-table">
         <colgroup>
@@ -975,9 +1157,11 @@ function renderStage5() {
       </table>
     </div>
 
-    <div class="cpx-review-band">
-      <span class="cpx-review-band-label">Decision</span>
-      <span class="cpx-decision-value">${d.decision}</span>
+    <div class="form-grid">
+      <div class="form-group span-2">
+        <label>Decision / Review Comments</label>
+        <textarea class="browser-default detail-textarea" placeholder="Enter technical review comments and the selection rationale…">${d.decision}</textarea>
+      </div>
     </div>
   `;
 }
@@ -1011,7 +1195,22 @@ function renderStage6() {
     </tr>`).join('');
 
   return `
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Commercial Bid Evaluation <small>(Price · terms · warranty — combined with TBE Stage 5 for final decision)</small></h5>
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Commercial Bid Evaluation <small>(Price · terms · warranty — combined with TBE Stage 5 for final decision)</small></h5>
+      <div class="bi-block-meta">
+        <a href="${CPX_PURCHASING_URL}" target="_blank" rel="noopener" class="hBtn hBtn-sm hViva waves-effect"><i class="material-icons">open_in_new</i><span class="label">Create in Purchasing System</span></a>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group span-2">
+        <label>Reference RFQ</label>
+        <div class="aniInput cpx-qs-field input-field">
+          <input type="text" class="browser-default cpx-quicksearch" value="${d.rfqNo}" data-master="rfqNumbers" placeholder="Quick search…" autocomplete="off">
+          <i class="material-icons cpx-qs-ico">search</i>
+          <span class="focus-border"></span>
+        </div>
+      </div>
+    </div>
     <div class="hoo-spec-table">
       <table class="hoo-table">
         <colgroup>
@@ -1039,9 +1238,11 @@ function renderStage6() {
       </div>
     </div>
 
-    <div class="cpx-review-band">
-      <span class="cpx-review-band-label">Final Selection</span>
-      <span class="cpx-decision-value">${winner.name} — Contract Amount ${winner.negotiated}</span>
+    <div class="form-grid">
+      <div class="form-group span-2">
+        <label>Final Selection / Review Comments</label>
+        <textarea class="browser-default detail-textarea" placeholder="Enter the final selection rationale and commercial review comments…">${winner.name} — Contract Amount ${winner.negotiated}</textarea>
+      </div>
     </div>
   `;
 }
@@ -1218,21 +1419,8 @@ function renderStage8() {
       <div class="cpx-tl-note n-${m.status}">${m.note || tlNote[m.status] || ''}</div>
     </div>`).join('');
 
-  /* Change Log / Issues — hoo-table (ID 는 CMMS WO 링크 어법, 상태는 mr-pill-sm) */
-  const logRows = (rows) => rows.map(r => `
-    <tr>
-      <td><a href="javascript:;" class="cpx-wo-link">${r.id}</a></td>
-      <td>${r.desc}</td>
-      <td><span class="mr-status mr-pill-sm ${r.state === 'Closed' ? 'st-approved' : 'st-inprogress'}">${r.state}</span></td>
-    </tr>`).join('');
-  const logTable = (rows) => `
-    <div class="hoo-spec-table">
-      <table class="hoo-table">
-        <colgroup><col style="width:110px"><col><col style="width:100px"></colgroup>
-        <thead><tr><th>ID</th><th>Description</th><th>Status</th></tr></thead>
-        <tbody>${logRows(rows)}</tbody>
-      </table>
-    </div>`;
+  /* Change Log / Issues — 사용자 추가/삭제 편집형 테이블. 빌더는 top-level
+     cpxLogTableHtml (ID·Status 컬럼 제거, Description 입력 + ✕ 삭제) */
 
   return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>S-Curve Progress Charts <small>(Plan vs Actual — cumulative %)</small></h5>
@@ -1258,12 +1446,63 @@ function renderStage8() {
       <div class="cpx-tl-items">${tlItems}</div>
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Change Log</h5>
-    ${logTable(d.changes)}
-
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Issues</h5>
-    ${logTable(d.issues)}
+    ${cpxLogTableHtml('Change Log', d.changes, 'changes')}
+    ${cpxLogTableHtml('Issues', d.issues, 'issues')}
   `;
+}
+
+/* =================================================================
+ * Stage 8 — Change Log / Issues 편집형 테이블 (2026-06-09 사용자 요청)
+ *   ID·Status 컬럼 제거 · 사용자가 직접 행 추가/삭제. Sign-off Chain 어법 재사용.
+ *   Description=입력 / ✕ 삭제 / 우상단 Add row · No.=renumberHooNo
+ * ================================================================= */
+function cpxLogRowHtml(row, i) {
+  const r = row || {};
+  return `
+    <tr>
+      <td class="hoo-no">${i + 1}</td>
+      <td><div class="aniInput"><input type="text" class="browser-default" value="${r.desc || ''}" placeholder="Description…"><span class="focus-border"></span></div></td>
+      <td class="hoo-x"><i class="material-icons">close</i></td>
+    </tr>`;
+}
+function cpxLogTableHtml(title, rows, key) {
+  return `
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>${title}</h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect cpx-log-add" data-log="${key}"><i class="material-icons">add</i><span class="label">Add row</span></a>
+      </div>
+    </div>
+    <div class="hoo-spec-table">
+      <table class="hoo-table">
+        <colgroup><col style="width:48px"><col><col style="width:44px"></colgroup>
+        <thead><tr><th>No.</th><th>Description</th><th></th></tr></thead>
+        <tbody id="cpxLog-${key}">${(rows || []).map(cpxLogRowHtml).join('')}</tbody>
+      </table>
+    </div>`;
+}
+function renumberHooNo(tbody) {
+  tbody.querySelectorAll(':scope > tr').forEach((tr, i) => {
+    const no = tr.querySelector('.hoo-no');
+    if (no) no.textContent = i + 1;
+  });
+}
+function bindLogEditors() {
+  document.querySelectorAll('.cpx-log-add').forEach(btn => {
+    const tbody = document.getElementById('cpxLog-' + btn.dataset.log);
+    if (!tbody) return;
+    /* 행 추가 — 빈 행 append + 번호 재계산 */
+    btn.addEventListener('click', () => {
+      tbody.insertAdjacentHTML('beforeend', cpxLogRowHtml({}, tbody.children.length));
+      renumberHooNo(tbody);
+    });
+    /* 행 삭제 — hoo-x 이벤트 위임 */
+    tbody.addEventListener('click', (e) => {
+      if (!e.target.closest('.hoo-x')) return;
+      e.target.closest('tr')?.remove();
+      renumberHooNo(tbody);
+    });
+  });
 }
 
 /* =================================================================
@@ -1442,7 +1681,6 @@ function bindStage8Charts() {
  * Stage 9 — Commissioning & Verification (full implementation)
  *   PDF p.10: Qualification Steps — FAT/SAT/IQ/OQ/PQ/Go-Live
  *             각 항목 Pass/Fail + 날짜, 모두 Pass → Handover
- *            Punch List — 내용 + OPEN/CLOSED, 전부 CLOSED → Go-Live 가능
  *   Qualification 은 순차 검증 → 유리판 체인(cpx-appr-step) 어법 재사용
  *   (Stage 3 결재 / Stage 7 지급과 같은 "순차 진행" 시각 언어)
  * ================================================================= */
@@ -1478,37 +1716,15 @@ function renderStage9() {
     </div>`;
   }).join('');
 
-  /* Punch List — hoo-table (전부 CLOSED 여야 Go-Live — PDF 룰은 타이틀 small 로) */
-  const punchRows = d.punchList.map((p, i) => `
-    <tr>
-      <td class="hoo-no">${i + 1}</td>
-      <td>${p.text}</td>
-      <td><span class="mr-status mr-pill-sm ${p.state === 'Closed' ? 'st-approved' : 'st-inprogress'}">${p.state.toUpperCase()}</span></td>
-    </tr>`).join('');
-
   return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>Qualification Steps <small>(All must pass before handover)</small></h5>
     <div class="cpx-appr-chain cpx-qual-chain">${qualSteps}</div>
-
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Punch List <small>(All items must be CLOSED before Go-Live)</small></h5>
-    <div class="hoo-spec-table">
-      <table class="hoo-table">
-        <colgroup><col style="width:50px"><col><col style="width:100px"></colgroup>
-        <thead><tr><th>#</th><th>Item</th><th>Status</th></tr></thead>
-        <tbody>${punchRows}</tbody>
-      </table>
-    </div>
 
     <div class="form-grid">
       <div class="form-group span-2">
         <label>Result</label>
         <div class="aniInput"><input type="text" class="browser-default" value="${d.result}"><span class="focus-border"></span></div>
       </div>
-    </div>
-
-    <div class="cpx-review-band">
-      <span class="cpx-review-band-label">Handover</span>
-      <span class="cpx-decision-value">${d.handover}</span>
     </div>
   `;
 }
@@ -1518,8 +1734,8 @@ function renderStage9() {
  *   PDF p.11: Budget vs Actual (Variance/Rate) · Performance Expected vs Actual(초과달성률)
  *            Net Benefit(①+②−③) · ROI Formulas(Expected vs Actual) · CCC Improvement
  *            Lessons Learned(text)
- *   ※ Stage 2 와 동일 항목 구조 — Expected 컬럼은 calcStage2() 실계산값 연동
- *     (data.js roiCompare 의 expected mock 은 구식 — 메모리 결정 사항)
+ *   ※ Stage 2 와 동일 항목 구조 — Expected 컬럼·네비 Exp 모두 calcStage2() 실계산값 연동
+ *     (data.js 의 expected 하드코딩은 제거됨 — actual 만 보관, Expected 는 전부 live)
  * ================================================================= */
 
 /* 컴팩트 USD — 원본 표기: 박스는 ≥1M 이면 M, 테이블은 K 고정 */
@@ -1986,6 +2202,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* MASTERDATA 퀵서치 (M.Autocomplete) */
   bindQuickSearch();
+
+  /* Stage 1 Sign-off Chain — 행 추가/삭제 (initial 행은 위 퀵서치/셀렉트가 처리) */
+  bindSignoffChain();
+
+  /* Stage 4 Key Findings — Quill WYSIWYG 에디터 */
+  bindKeyFindingsEditor();
+
+  /* Stage 8 Change Log / Issues — 행 추가/삭제 (initial 셀렉트는 위 bindSelectChevron 처리) */
+  bindLogEditors();
 
   /* Stage 2 산출식 — 입력(cpxSavings/cpxRevenue/cpxOpCost/cpxEstBudget) 변경 시 재계산 */
   bindStage2Calc();

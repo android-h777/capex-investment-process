@@ -82,6 +82,27 @@ const CPX_MASTER = {
     'PO-4500076512',
     'PO-4500075488',
   ],
+  /* Stage 5·6 — (RFQ MASTERDATA) 외부 구매 툴 견적요청(RFQ) 번호.
+     선택 시 해당 RFQ 의 입찰 평가가 TBE/CBE 표에 로드됨 (TBE·CBE 각각 선택) */
+  rfqNumbers: [
+    'RFQ-2026-0042',
+    'RFQ-2026-0041',
+    'RFQ-2026-0038',
+    'RFQ-2026-0035',
+    'RFQ-2026-0029',
+  ],
+  /* Stage 1 — Sign-off Chain 역할 (combo). 담당자 지정 행의 Role 셀렉트 옵션 */
+  signoffRoles: [
+    'Requester',
+    'Department Approver',
+    'Technical Approver',
+    'Finance Approver',
+    'EHS Approver',
+    'Plant Manager',
+    'Maintenance / Reliability',
+    'Procurement / Quality',
+    'Final Approver',
+  ],
 };
 
 /* =================================================================
@@ -111,6 +132,14 @@ const capexCase = {
     requestDate: 'Jan 15, 2026',
     priority: 'High',
     targetCompletion: 'Q4 2026',
+    /* Sign-off Chain — 담당자 지정 (Role: CPX_MASTER.signoffRoles / Name: CPX_MASTER.users 퀵서치) */
+    signoffChain: [
+      { role: 'Requester',           name: 'James Wilson' },
+      { role: 'Department Approver',  name: 'Sarah Chen' },
+      { role: 'Technical Approver',   name: 'Michael Brown' },
+      { role: 'Finance Approver',     name: 'Anna Schmidt' },
+      { role: 'Final Approver',       name: 'David Park' },
+    ],
   },
 
   /* Stage 2 — Feasibility & Expected ROI */
@@ -146,7 +175,7 @@ const capexCase = {
     status: 'Approved',
     approvedAmount: '$ 2,800,000',
     date: 'Feb 10, 2026',
-    grade: 'A / High',
+    /* Priority 는 Stage 1(stage1.priority)을 그대로 재확인 — 결재 레벨 결정. 별도 grade 필드 제거 */
     budgetCode: 'BU-PA-WF-2026-CAP-042',
     /* 날짜 — 미국식 표기 + 연도 포함 (타이틀바 Last Mod. 표기와 동일 톤) */
     approvalChain: [
@@ -195,6 +224,7 @@ const capexCase = {
 
   /* Stage 5 — TBE */
   stage5: {
+    rfqNo: 'RFQ-2026-0042', /* 외부 구매 툴에서 불러온 기준 RFQ (TBE) */
     vendors: [
       { name: 'Vendor A', score: '92 / 100', compliance: 'Pass',        leadTime: '24 wks', comment: 'Best design, proven record', winner: true },
       { name: 'Vendor B', score: '85 / 100', compliance: 'Pass',        leadTime: '28 wks', comment: 'Good, longer delivery' },
@@ -205,6 +235,7 @@ const capexCase = {
 
   /* Stage 6 — CBE */
   stage6: {
+    rfqNo: 'RFQ-2026-0042', /* 외부 구매 툴에서 불러온 기준 RFQ (CBE — TBE와 독립 선택) */
     vendors: [
       { name: 'Vendor A', score: 88, quoted: '$ 2,350K', negotiated: '$ 2,280K', terms: '30/40/20/10', warranty: '24 mo', decision: 'Selected',     winner: true },
       { name: 'Vendor B', score: 82, quoted: '$ 2,520K', negotiated: '$ 2,450K', terms: '40/30/20/10', warranty: '18 mo', decision: 'Not selected' },
@@ -266,11 +297,11 @@ const capexCase = {
       { date: 'Dec 15, 2026', label: 'Commissioning Done',  status: 'on-time' },
     ],
     changes: [
-      { id: 'CHG-001', desc: 'Motor size changed (22→30kW). Added cost $ 12,000.', state: 'Closed' },
-      { id: 'CHG-002', desc: 'Added temperature sensor port. Added cost $ 3,500.', state: 'Closed' },
+      { desc: 'Motor size changed (22→30kW). Added cost $ 12,000.' },
+      { desc: 'Added temperature sensor port. Added cost $ 3,500.' },
     ],
     issues: [
-      { id: 'ISS-001', desc: 'Fabrication delayed 3 days → Recovered by running site prep in parallel. No impact on overall schedule.', state: 'Closed' },
+      { desc: 'Fabrication delayed 3 days → Recovered by running site prep in parallel. No impact on overall schedule.' },
     ],
   },
 
@@ -284,16 +315,7 @@ const capexCase = {
       { label: 'PQ (Performance Qualification)',    status: 'Passed', date: 'Nov 18, 2026' },
       { label: 'Go-Live',                           status: 'Live',   date: 'Nov 20, 2026' },
     ],
-    punchList: [
-      { text: 'Pressure test passed — tested at 1.5× design pressure (9 bar)', state: 'Closed' },
-      { text: 'Vibration check passed — within acceptable limits',             state: 'Closed' },
-      { text: 'Control system signal check — all 48 I/O points confirmed OK',  state: 'Closed' },
-      { text: 'Safety valve certificate received',                             state: 'Closed' },
-      { text: 'Cleaning system validated — 3 test cycles passed',              state: 'Closed' },
-      { text: 'Explosion-proof certificate received',                          state: 'Closed' },
-    ],
     result: 'All IQ/OQ/PQ passed. No major issues found.',
-    handover: 'Nov 20, 2026 — Handed over to Production team',
   },
 
   /* Stage 10 — Actual ROI Analysis */
@@ -301,22 +323,24 @@ const capexCase = {
     budget: { approved: '$ 2.80M', actual: '$ 2.58M', delta: '-$ 0.22M', variancePct: 7.9 },
     savings:  { expected: '$ 350K', actual: '$ 412K',  pct: '+17.7%' },
     revenue:  { expected: '$ 1.20M', actual: '$ 1.38M', pct: '+15.0%' },
+    /* Expected 컬럼은 전부 calcStage2() live 산출 (detail.js renderStage10) — 여기엔 actual 만 보관.
+       (구식 하드코딩 expected mock 제거, 2026-06-09) */
     netBenefit: [
-      { label: '① Annual Cost Savings',         expected: '$ 350K',   actual: '$ 412K'  },
-      { label: '② Annual Incremental Revenue',  expected: '$ 1,200K', actual: '$ 1,380K' },
-      { label: '③ Annual Operating Cost Increase', expected: '$ 360K', actual: '$ 400K'  },
-      { label: 'Annual Net Benefit (① + ② − ③)', expected: '$ 1,190K', actual: '$ 1,392K', total: true },
+      { label: '① Annual Cost Savings',            actual: '$ 412K'  },
+      { label: '② Annual Incremental Revenue',     actual: '$ 1,380K' },
+      { label: '③ Annual Operating Cost Increase', actual: '$ 400K'  },
+      { label: 'Annual Net Benefit (① + ② − ③)',   actual: '$ 1,392K', total: true },
     ],
     roiCompare: [
-      { label: 'ROI (%)',          expected: '42.5%',     actual: '53.9%',     formula: 'Annual Net Benefit ÷ Total Investment × 100' },
-      { label: 'Payback Period',   expected: '2.4 yr',    actual: '1.9 yr',    formula: 'Total Investment ÷ Annual Net Benefit' },
-      { label: 'IRR',              expected: '28.7%',     actual: '31.4%',     formula: 'Discount rate at which NPV = 0' },
-      { label: 'NPV',              expected: '$ 1,450K',  actual: '$ 1,620K',  formula: 'Σ Cash Flow ÷ (1 + r)ⁿ − Investment' },
+      { label: 'ROI (%)',          actual: '53.9%',     formula: 'Annual Net Benefit ÷ Total Investment × 100' },
+      { label: 'Payback Period',   actual: '1.9 yr',    formula: 'Total Investment ÷ Annual Net Benefit' },
+      { label: 'IRR',              actual: '31.4%',     formula: 'Discount rate at which NPV = 0' },
+      { label: 'NPV',              actual: '$ 1,620K',  formula: 'Σ Cash Flow ÷ (1 + r)ⁿ − Investment' },
     ],
     cccCompare: [
-      { label: 'DIO Reduction (Days Inventory Outstanding)', expected: '-3.5 days', actual: '-4.1 days', formula: 'Days inventory reduced (Before − After)' },
-      { label: 'Lead Time Reduction',                        expected: '-2.0 days', actual: '-2.5 days', formula: 'Production time reduced (Before − After)' },
-      { label: 'Working Capital Savings',                    expected: '$ 180K /yr', actual: '$ 210K /yr', formula: 'Cash freed by less inventory (Daily COGS × days saved)' },
+      { label: 'DIO Reduction (Days Inventory Outstanding)', actual: '-4.1 days', formula: 'Days inventory reduced (Before − After)' },
+      { label: 'Lead Time Reduction',                        actual: '-2.5 days', formula: 'Production time reduced (Before − After)' },
+      { label: 'Working Capital Savings',                    actual: '$ 210K /yr', formula: 'Cash freed by less inventory (Daily COGS × days saved)' },
     ],
     assessment: 'All targets exceeded. 7.9% under budget. ROI +11.4%p above forecast.',
     lessons: 'Verify fabrication delivery dates more strictly upfront. Parallel site prep was effective — recommend as standard practice.',
