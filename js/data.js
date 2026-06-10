@@ -340,7 +340,7 @@ const capexCase = {
     cccCompare: [
       { label: 'DIO Reduction (Days Inventory Outstanding)', actual: '-4.1 days', formula: 'Days inventory reduced (Before − After)' },
       { label: 'Lead Time Reduction',                        actual: '-2.5 days', formula: 'Production time reduced (Before − After)' },
-      { label: 'Working Capital Savings',                    actual: '$ 210K /yr', formula: 'Cash freed by less inventory (Daily COGS × days saved)' },
+      { label: 'Working Capital Savings',                    actual: '$ 210K', formula: 'Cash freed by less inventory (Daily COGS × days saved)' },
     ],
     assessment: 'All targets exceeded. 7.9% under budget. ROI +11.4%p above forecast.',
     lessons: 'Verify fabrication delivery dates more strictly upfront. Parallel site prep was effective — recommend as standard practice.',

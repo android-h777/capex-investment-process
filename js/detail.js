@@ -882,6 +882,11 @@ function renderStage2() {
       <div class="cpx-ccc-val">−${d.leadTimeReduction.toFixed(1)}<span class="cpx-ccc-unit">days</span></div>
       <div class="cpx-ccc-note">Time saved from production start to finished goods shipment</div>
     </div>
+    <div class="cpx-ccc-card cpx-ccc-uni">
+      <div class="cpx-ccc-top"><i class="material-icons">inventory_2</i>Annual COGS</div>
+      <div class="cpx-ccc-val">$ ${d.annualCogs.toLocaleString('en-US')}</div>
+      <div class="cpx-ccc-note">Basis for Daily COGS (÷ 365)</div>
+    </div>
     <div class="cpx-ccc-card cpx-ccc-spy">
       <div class="cpx-ccc-top"><i class="material-icons">savings</i>Working Capital Savings</div>
       <div class="cpx-ccc-val">${fmtUsd(c.wcSavings)}</div>
@@ -2168,7 +2173,7 @@ function s10FbExpr(c, d) {
     roiE:     `= Net Benefit ÷ Investment × 100 = ${fmtUsdK(c.netBenefit)} ÷ ${fmtUsdK(c.invest)} × 100 = <b>${c.roi.toFixed(1)}%</b>`,
     paybackE: `= Investment ÷ Net Benefit = ${fmtUsdK(c.invest)} ÷ ${fmtUsdK(c.netBenefit)} = <b>${pb}</b>`,
     npvE:     `= Σ (Net Benefit ÷ (1 + 0.1)ⁿ) − Investment ≈ <b>${fmtUsdK(c.npv)}</b>  (r = 10%, n = 5yr)`,
-    wcE:      `= Daily COGS × DIO Reduction = (${fmtUsdAuto(c.cogs)} ÷ 365) × ${d2.dioReduction.toFixed(1)} days ≈ <b>${fmtUsdK(c.wcSavings)} /yr</b>`,
+    wcE:      `= Daily COGS × DIO Reduction = (${fmtUsdAuto(c.cogs)} ÷ 365) × ${d2.dioReduction.toFixed(1)} days ≈ <b>${fmtUsdK(c.wcSavings)}</b>`,
   };
 }
 
@@ -2228,7 +2233,7 @@ function renderStage10() {
   const cccExpected = [
     `-${d2.dioReduction.toFixed(1)} days`,
     `-${d2.leadTimeReduction.toFixed(1)} days`,
-    `${fmtUsdK(c.wcSavings)} /yr`,
+    `${fmtUsdK(c.wcSavings)}`,
   ];
   const cccRows = d.cccCompare.map((r, i) => `
     <tr>
@@ -2287,7 +2292,7 @@ function renderStage10() {
     <h5 class="bi-block-title"><span class="bi-bar"></span>ROI — Expected vs Actual <small>(Annual)</small></h5>
     <div class="hoo-spec-table">
       <table class="hoo-table">
-        <colgroup><col style="width:220px"><col style="width:110px"><col style="width:110px"><col></colgroup>
+        <colgroup><col style="width:300px"><col style="width:110px"><col style="width:110px"><col></colgroup>
         ${cmpTableHead(true)}
         <tbody>${roiRows}</tbody>
       </table>
@@ -2304,7 +2309,7 @@ function renderStage10() {
     <h5 class="bi-block-title"><span class="bi-bar"></span>CCC Improvement <small>(Cash Conversion Cycle — Expected vs Actual)</small></h5>
     <div class="hoo-spec-table">
       <table class="hoo-table">
-        <colgroup><col style="width:220px"><col style="width:110px"><col style="width:110px"><col></colgroup>
+        <colgroup><col style="width:300px"><col style="width:110px"><col style="width:110px"><col></colgroup>
         ${cmpTableHead(true)}
         <tbody>${cccRows}</tbody>
       </table>
@@ -2355,7 +2360,7 @@ function refreshStage10Expected(c) {
     .forEach((v, i) => { get(`cpxS10NbE${i}`).textContent = v; });
   [f.roi, c.payback != null ? `${c.payback.toFixed(1)} yr` : '—', f.irr, fmtUsdK(c.npv)]
     .forEach((v, i) => { get(`cpxS10RoiE${i}`).textContent = v; });
-  [`-${d2.dioReduction.toFixed(1)} days`, `-${d2.leadTimeReduction.toFixed(1)} days`, `${fmtUsdK(c.wcSavings)} /yr`]
+  [`-${d2.dioReduction.toFixed(1)} days`, `-${d2.leadTimeReduction.toFixed(1)} days`, `${fmtUsdK(c.wcSavings)}`]
     .forEach((v, i) => { get(`cpxS10CccE${i}`).textContent = v; });
 
   /* 산식 풀이 밴드 (Expected 측) 도 같이 갱신 — 안 하면 박스 숫자만 바뀌고 산식은 stale */
