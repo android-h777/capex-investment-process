@@ -180,22 +180,26 @@
 
 ## 부록 — 용어 빠른 참조 (질문 대비)
 
-| 용어 | 한 줄 설명 |
-|---|---|
-| CAPEX | 자본적 지출(설비·공장 등 큰 투자). 반대는 OPEX(운영비) |
-| ROI | 투자수익률 = 번 돈 ÷ 투자금 |
-| Payback | 투자금 회수 기간(년) |
-| IRR | 내부수익률 — 투자의 '이자율'격 지표 |
-| NPV | 순현재가치 — 미래 수익을 현재가치로 환산한 합, +면 이득 |
-| CCC | 현금전환주기 — 현금이 재고에 묶였다 회수되는 기간, 짧을수록 좋음 |
-| DIO | 재고보유일 — 재고가 창고에 머무는 평균 일수 |
-| TBE / CBE | 기술 입찰평가 / 상업(가격) 입찰평가 |
-| RFQ / PO | 견적요청서 / 구매발주서 |
-| CMMS | 설비보전 전산시스템(고장·정비 이력) |
-| FAT / SAT | 공장 출하 전 검수 / 현장 설치 후 검수 |
-| IQ / OQ / PQ | 설치 / 운전 / 성능 적격성 검증 |
-| Go-Live | 정식 가동 시작 |
-| S-Curve | 진척률 곡선(계획 vs 실적) |
+| 용어 | 풀네임 (영문) | 한 줄 설명 |
+|---|---|---|
+| CAPEX | Capital Expenditure | 자본적 지출(설비·공장 등 큰 투자). 반대는 OPEX |
+| OPEX | Operating Expenditure | 운영비(인건비·소모품 등 반복 지출) |
+| ROI | Return on Investment | 투자수익률 = 번 돈 ÷ 투자금 |
+| Payback | Payback Period | 투자금 회수 기간(년) |
+| IRR | Internal Rate of Return | 내부수익률 — 투자의 '이자율'격 지표 |
+| NPV | Net Present Value | 순현재가치 — 미래 수익을 현재가치로 환산한 합, +면 이득 |
+| CCC | Cash Conversion Cycle | 현금전환주기 — 현금이 재고에 묶였다 회수되는 기간, 짧을수록 좋음 |
+| DIO | Days Inventory Outstanding | 재고보유일 — 재고가 창고에 머무는 평균 일수 |
+| DSO | Days Sales Outstanding | 매출채권 회수일 — 판매 후 현금 받기까지 걸리는 일수 |
+| DPO | Days Payable Outstanding | 매입채무 지급일 — 매입 후 대금 지급까지의 일수 |
+| TBE / CBE | Technical / Commercial Bid Evaluation | 기술 입찰평가 / 상업(가격) 입찰평가 |
+| RFQ / PO | Request for Quotation / Purchase Order | 견적요청서 / 구매발주서 |
+| CMMS | Computerized Maintenance Management System | 설비보전 전산시스템(고장·정비 이력) |
+| FAT / SAT | Factory / Site Acceptance Test | 공장 출하 전 검수 / 현장 설치 후 검수 |
+| IQ / OQ / PQ | Installation / Operational / Performance Qualification | 설치 / 운전 / 성능 적격성 검증 |
+| COGS | Cost of Goods Sold | 매출원가 — Daily COGS(÷365)가 CCC 절감액 산출 기준 |
+| Go-Live | — | 정식 가동 시작 |
+| S-Curve | — | 진척률 곡선(계획 vs 실적) |
 
 ---
 
