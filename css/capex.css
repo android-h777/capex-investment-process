@@ -737,6 +737,16 @@
 .detail-section .cpx-roi-grid .cpx-ccc-uni { background: linear-gradient(135deg, rgba(122,148,80,0.22), rgba(122,148,80,0.07)); }
 .detail-section .cpx-roi-grid .cpx-ccc-uni .cpx-ccc-val,
 .detail-section .cpx-roi-grid .cpx-ccc-uni .cpx-ccc-top i { color: #5e7e3c; }
+/* 그린 유리 변형(개별 카드) — TFT 참조에서 좌측 보더 초록인 카드 대응 (2026-07-09, 사용자 요청) */
+.detail-section .cpx-ccc-card.is-good { background: linear-gradient(135deg, rgba(122,148,80,0.22), rgba(122,148,80,0.07)); }
+.detail-section .cpx-ccc-card.is-good .cpx-ccc-val,
+.detail-section .cpx-ccc-card.is-good .cpx-ccc-top i { color: #5e7e3c; }
+/* 오렌지(테라코타) 유리 변형 — TFT 참조에서 좌측 보더 주황인 카드 대응 (2026-07-09, 사용자 요청) */
+.detail-section .cpx-ccc-card.is-warn { background: linear-gradient(135deg, rgba(217,119,87,0.20), rgba(217,119,87,0.06)); }
+.detail-section .cpx-ccc-card.is-warn .cpx-ccc-val,
+.detail-section .cpx-ccc-card.is-warn .cpx-ccc-top i { color: #b4633e; }
+.detail-section .cpx-cmp-box.is-warn { background: linear-gradient(135deg, rgba(217,119,87,0.20), rgba(217,119,87,0.06)); }
+.detail-section .cpx-cmp-box.is-warn .cpx-cmp-num { color: #b4633e; }
 
 /* 4 — 좌측 스크롤스파이 유리판 어법 이식: 흰 유리 + 색수차 spotlight(마우스 추적) + bronze */
 .detail-section .cpx-ccc-spy {
@@ -1098,6 +1108,8 @@
   gap: 15px;
   margin-bottom: 15px;
 }
+/* 2박스 변형 (5:5) — Stage 2 CCC 처럼 카드가 2장일 때 (2026-07-09, 사용자 요청) */
+.detail-section .cpx-cmp-row.cols-2 { grid-template-columns: 1fr 1fr; }
 /* 색유리판 — 반투명 틴트 + 백드롭 블러 + 광택 (Stage 10 비교 박스) */
 .detail-section .cpx-cmp-box {
   position: relative;
@@ -1123,7 +1135,8 @@
   box-shadow: 0 9px 22px rgba(60,60,60,0.12), inset 0 1px 0 rgba(255,255,255,0.78);
 }
 /* 변형별 유리 틴트 */
-.detail-section .cpx-cmp-box.is-actual    { background: linear-gradient(135deg, rgba(184,150,86,0.24), rgba(184,150,86,0.07)); }
+/* is-actual = 그린 유리 — TFT 참조에서 좌측/상단 보더 초록 카드(Actual·Approved 등) 대응 (2026-07-09 bronze→green) */
+.detail-section .cpx-cmp-box.is-actual    { background: linear-gradient(135deg, rgba(122,148,80,0.24), rgba(122,148,80,0.07)); }
 .detail-section .cpx-cmp-box.is-delta.pos { background: linear-gradient(135deg, rgba(122,148,80,0.24), rgba(122,148,80,0.07)); }
 .detail-section .cpx-cmp-box.is-delta.neg { background: linear-gradient(135deg, rgba(212,95,95,0.22), rgba(212,95,95,0.06)); }
 .detail-section .cpx-cmp-num {
@@ -1132,7 +1145,7 @@
   color: var(--c-text);
   font-variant-numeric: tabular-nums;
 }
-.detail-section .cpx-cmp-box.is-actual .cpx-cmp-num { color: var(--c-primary-d); } /* 실적 = bronze (차트 Actual 과 동일 언어) */
+.detail-section .cpx-cmp-box.is-actual .cpx-cmp-num { color: #5e7e3c; } /* 그린 유리 값 색 (ccc-card is-good 와 동일) */
 .detail-section .cpx-cmp-box.is-delta.pos .cpx-cmp-num { color: #899f6a; }         /* 달성/절감 = sage */
 .detail-section .cpx-cmp-box.is-delta.neg .cpx-cmp-num { color: var(--c-danger); } /* 미달/초과지출 = viva magenta */
 .detail-section .cpx-cmp-lbl {

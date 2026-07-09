@@ -10,17 +10,19 @@
  *   sub:    subtitle (Korean meaning) — optional, rt-card name fallback
  *   icon:   Material Icons name (우측 panel section-title 에서 사용)
  * ================================================================= */
+/* 2026-07-09 M-CapEx TFT 프로토타입 기준으로 재편 (참조: Desktop CAPEX_M-CapEx_TFT_Prototype.html)
+   — Gatekeeper/Approved Budget/AR Tracking 신규, TBE+CBE 병합, Contract·Commissioning 은 8단계 등에 흡수 */
 const capexFlow = [
-  { key: 'request',     no: 1,  label: 'Investment Request',     sub: '투자 요청',                icon: 'lightbulb'     },
+  { key: 'request',     no: 1,  label: 'Idea Registration',      sub: '아이디어 등록',            icon: 'lightbulb'     },
   { key: 'feasibility', no: 2,  label: 'Feasibility & ROI',      sub: '타당성 / Expected ROI',    icon: 'trending_up'   },
-  { key: 'approval',    no: 3,  label: 'CAPEX Approval',         sub: '최종 결재',                icon: 'verified'      },
-  { key: 'spec',        no: 4,  label: 'Requirement & Spec',     sub: '사양 정의 / CMMS',         icon: 'engineering'   },
-  { key: 'tbe',         no: 5,  label: 'TBE',                    sub: 'Technical Bid Eval',       icon: 'science'       },
-  { key: 'cbe',         no: 6,  label: 'CBE',                    sub: 'Commercial Bid Eval',      icon: 'request_quote' },
-  { key: 'contract',    no: 7,  label: 'Contract & PO',          sub: '계약 / 발주',              icon: 'description'   },
-  { key: 'execution',   no: 8,  label: 'Design / Fab / Install', sub: '실행 단계 (S-Curve)',      icon: 'construction'  },
-  { key: 'commission',  no: 9,  label: 'Commissioning',          sub: '시운전 / Verification',    icon: 'play_circle'   },
-  { key: 'actual',      no: 10, label: 'Actual ROI Analysis',    sub: '사후 성과 분석',           icon: 'analytics'     },
+  { key: 'spec',        no: 3,  label: 'Requirement & Spec',     sub: '사양 정의 / CMMS',         icon: 'engineering'   },
+  { key: 'gatekeeper',  no: 4,  label: 'Gatekeeper Review',      sub: '게이트키퍼 검토',          icon: 'fact_check'    },
+  { key: 'approval',    no: 5,  label: 'AR Approval',            sub: 'AR 결재 (DOA)',            icon: 'verified'      },
+  { key: 'budget',      no: 6,  label: 'Approved Budget',        sub: '승인 예산 / Supplement',   icon: 'account_balance' },
+  { key: 'tbe',         no: 7,  label: 'TBE / CBE',              sub: 'Technical & Commercial Bid Eval', icon: 'science' },
+  { key: 'execution',   no: 8,  label: 'Project Execution',      sub: '실행 단계 (S-Curve)',      icon: 'construction'  },
+  { key: 'tracking',    no: 9,  label: 'AR Tracking & Forecast', sub: '월별 실적 / 예측',         icon: 'insights'      },
+  { key: 'actual',      no: 10, label: 'Reporting & Actual ROI', sub: '리포팅 / 사후 성과 분석',  icon: 'analytics'     },
 ];
 
 /* =================================================================
@@ -91,6 +93,42 @@ const CPX_MASTER = {
     'RFQ-2026-0035',
     'RFQ-2026-0029',
   ],
+  /* Stage 4 — Gatekeeper Review (GATEKEEPER MASTERDATA) 사이트별 게이트키퍼 */
+  gatekeepers: [
+    'David Thompson — VP Operations, Waterford',
+    'Laura Martinez — VP Operations, Sistersville',
+    'Kenji Sato — Site Director, Ohta',
+    'Petra Vogel — Site Director, Leverkusen',
+  ],
+
+  /* Stage 1 — Idea Registration (M-CapEx TFT) Category / SubCategory 마스터 */
+  categories: ['Maintenance', 'EHS', 'Infrastructure', 'Growth', 'Technology', 'Productivity'],
+  subCategories: ['Preventive', 'Corrective', 'Capacity Expansion', 'Compliance', 'Optimization', 'Modernization', 'New Installation', 'Upgrade'],
+  /* Category 선택 → 필수 서류 자동 매핑 (TFT: "If select category information populates for documents needed") */
+  categoryDocs: {
+    Growth: [
+      { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
+      { doc: 'RAV Document',             why: 'Return on Assets Verification' },
+    ],
+    EHS: [
+      { doc: 'EHS Risk Assessment',      why: 'Regulatory / safety compliance review' },
+      { doc: 'Permit Checklist',         why: 'Environmental permit validation' },
+    ],
+    Maintenance: [
+      { doc: 'Breakdown History Report', why: 'CMMS failure records for justification' },
+    ],
+    Infrastructure: [
+      { doc: 'Site Master Plan Extract', why: 'Alignment with site infrastructure plan' },
+    ],
+    Technology: [
+      { doc: 'Technology Assessment',    why: 'Fit / obsolescence review' },
+      { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
+    ],
+    Productivity: [
+      { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
+    ],
+  },
+
   /* Stage 1 — Sign-off Chain 역할 (combo). 담당자 지정 행의 Role 셀렉트 옵션 */
   signoffRoles: [
     'Requester',
@@ -118,9 +156,45 @@ const capexCase = {
   lastMod: 'Last Mod. May 26, 2026 09:14 AM',
   requester: { name: 'James Wilson', dept: 'Production', date: 'Jan 15, 2026' },
 
-  /* Stage 1 — Investment Request */
+  /* Stage 1 — Idea Registration (M-CapEx TFT 재편, 2026-07-09) */
   stage1: {
     title: 'New Reactor Installation — Polymer Line Capacity Expansion',
+    ideaNo: 'WTFD-0042',            /* 사이트 기반 자동 채번 (SVLL-####, WTFD-#### …) */
+    category: 'Growth',             /* CPX_MASTER.categories */
+    subCategory: 'Capacity Expansion',
+    description: 'Polymer line at 95% utilization. $3,200,000 potential orders at risk in 2027 without expansion. +30% capacity needed. New reactor to be installed on existing foundation with piping tie-ins to current process infrastructure. Estimated 8-month implementation timeline from AR approval through commissioning.',
+    submitted: 'Submitted on Jan 18, 2026 by James Wilson',
+    /* Schedule — TFT 최소 구성: AR Approval / Procurement / Construction / (Commissioning) / Closure */
+    schedule: [
+      { label: 'AR Approval',   date: 'Feb 1 – Feb 28',  note: '4 wks' },
+      { label: 'Procurement',   date: 'Mar 1 – Jun 30',  note: '4 mo'  },
+      { label: 'Construction',  date: 'Jul 1 – Oct 31',  note: '4 mo'  },
+      { label: 'Commissioning', date: 'Nov 1 – Nov 30',  note: '1 mo'  },
+      { label: 'Closure',       date: 'Dec 1 – Dec 31',  note: '1 mo'  },
+    ],
+    /* Cost Estimate — 계정별 브레이크다운 (M-ERP Financial Master Data). null = 해당 없음.
+       Total Project = Current AR + Prior Approved. 합계: 2,520,000 + 280,000 = 2,800,000 (= estBudget) */
+    costEstimate: [
+      { desc: 'Investment - External Vendors', account: '200001400', current: 2280000, prior: 280000 },
+      { desc: 'Investment - Cap. Labor',       account: '200001400', current: 120000,  prior: null },
+      { desc: 'Leasehold Improvements',        account: '291131003', current: null,    prior: null },
+      { desc: 'Software',                      account: '292131000', current: null,    prior: null },
+      { desc: 'Cap Engineering',               account: '200001400', current: 85000,   prior: null },
+      { desc: 'Cap Interest',                  account: '185001400', current: null,    prior: null },
+      { desc: 'Excess FIFO',                   account: '120122105', current: null,    prior: null },
+      { desc: 'Expense - AR Related',          account: '596683000', current: 35000,   prior: null },
+      { desc: 'Exp - Operating Lease',         account: '594602000', current: null,    prior: null },
+      { desc: 'Other (VAT)',                   account: null,        current: null,    prior: null },
+    ],
+    /* Spend Schedule — 월별 지출 계획 ($, Jan~Dec). AR Tracker(9단계)의 Budget 원천.
+       월별 합계(355/397.5/…)가 9단계 트래커 Budget 컬럼과 일치해야 함 */
+    spendSchedule: [
+      { label: 'Ext. Vendors', m: [null, null, 350000, 350000, 350000, 350000, 280000, 200000, 200000, 150000, 50000, null] },
+      { label: 'Cap. Labor',   m: [null, null, null,   null,   null,   null,   20000,  25000,  25000,  25000,  25000, null] },
+      { label: 'AR Expense',   m: [null, 5000, 5000,   5000,   5000,   5000,   3000,   3000,   2000,   2000,   null,  null] },
+      { label: 'Cap Eng.',     m: [null, null, null,   42500,  42500,  null,   null,   null,   null,   null,   null,  null] },
+    ],
+    /* 이하 기존 필드 — 타이틀바/서머리/Stage 2 산출식에서 계속 사용 */
     type: 'New Equipment — Capacity Expansion',
     classification: 'Strategic Growth',
     background: 'Polymer line at 95% utilization. $3.2M potential orders at risk in 2027 without expansion.',
@@ -153,10 +227,15 @@ const capexCase = {
     opCostIncrease: 360000,     /* $/yr — 연간 운영비 증가 (Net Benefit 차감) */
     discountRate: 0.10,         /* NPV 할인율 r=10% (PDF 명세) */
     horizonYears: 5,            /* n=5yr (PDF 명세) */
+    /* IRR·NPV — 재무모델(Finance ROI model) 산출 고정값 (TFT 참조 기준, 2026-07-09 사용자 결정).
+       균등 CF 직접 계산(31.8%/$1,711,000)과 다름 — 램프업 등 모델 가정 차이로 간주.
+       ROI/Payback 은 라이브 재계산, IRR/NPV 는 이 고정값 사용 */
+    irrModel: 28.7,             /* % */
+    npvModel: 1450000,          /* $ */
     /* CCC 개선 — WC Savings = Daily COGS(COGS÷365) × DIO days saved (auto-calc)
        ※ Annual COGS 는 원본 HTML/PDF 입력 항목에 없는 필드 — 산출식 입력으로 필요해
          2026-06-05 사용자 승인으로 추가. 클라이언트 확인 사항. */
-    annualCogs: 18720000,    /* $/yr — Cost of Goods Sold */
+    annualCogs: 18800000,    /* $/yr — Cost of Goods Sold (TFT 참조 값: WC Savings ≈ $180,000/yr) */
     dioReduction: 3.5,       /* days — 재고 보유일수 감소분 (입력) */
     leadTimeReduction: 2.0,  /* days — 리드타임 단축 (입력, 계산 미사용) */
     /* PDF 명세: Risk = 선택(High/Medium/Low) + 위험 요소 기술(text) 2필드 */
@@ -169,12 +248,35 @@ const capexCase = {
     ],
   },
 
-  /* Stage 3 — CAPEX Approval */
+  /* Stage 4 — Gatekeeper Review (M-CapEx TFT 신규, 2026-07-09)
+     사이트/로케이션 기반으로 게이트키퍼에게 자동 라우팅 → 검토 → Advance to AR / FPP 결정.
+     PM 지정으로 spend schedule·benefits 보완 가능. history = 상태 추적 탭 */
+  gatekeeper: {
+    name: 'David Thompson — VP Operations, Waterford',
+    decision: 'Advanced to AR',
+    assignedPm: 'K. Park',
+    history: [
+      { date: 'Jan 20, 2026', action: 'Received',       by: 'System',      note: 'Auto-routed to site gatekeeper' },
+      { date: 'Jan 22, 2026', action: 'Reviewed',       by: 'D. Thompson', note: 'Strong business case — aligns with capacity growth strategy' },
+      { date: 'Jan 25, 2026', action: 'Assigned to PM', by: 'D. Thompson', note: 'Assigned to K. Park for refinement of spend schedule & benefits' },
+      { date: 'Jan 28, 2026', action: 'Updated',        by: 'K. Park',     note: 'Spend schedule and benefits refined, vendor quotes attached' },
+      { date: 'Feb 1, 2026', action: 'Advanced to AR', by: 'D. Thompson', note: 'Approved to proceed — strong ROI, aligns with 2026 capital plan' },
+    ],
+  },
+
+  /* Stage 5 — AR Approval (구 Stage 3 CAPEX Approval, M-CapEx TFT 재편)
+     AR = Appropriation Request. arNo 는 사이트 기반 자동 채번 (WV26001 등) */
   stage3: {
+    arNo: 'WV26001',
     capexNo: 'CAPEX-2026-WF-0042',
     status: 'Approved',
     approvedAmount: '$ 2,800,000',
     date: 'Feb 10, 2026',
+    attachments: [
+      { kind: 'file', label: 'Feasibility_Report.pdf', size: '2.4 MB' },
+      { kind: 'file', label: 'ROI_Model.xlsx',         size: '480 KB' },
+      { kind: 'file', label: 'Vendor_Quotes.pdf',      size: '1.8 MB' },
+    ],
     /* Priority 는 Stage 1(stage1.priority)을 그대로 재확인 — 결재 레벨 결정. 별도 grade 필드 제거 */
     budgetCode: 'BU-PA-WF-2026-CAP-042',
     /* 날짜 — 미국식 표기 + 연도 포함 (타이틀바 Last Mod. 표기와 동일 톤) */
@@ -189,11 +291,18 @@ const capexCase = {
 
   /* Stage 4 — Requirement & Specification */
   stage4: {
-    engSpec: 'Glass-lined reactor 10,000L, 6 bar, -20~250°C, anchor agitator 0.5~120 rpm, CIP system',
-    quality: 'ATEX Zone 1, FDA wetted parts, SIL-2, EU PED 2014/68/EU',
-    utilities: 'Elec: 480V/3ph/60Hz 75kW | Steam: 10 bar 2,000 kg/hr | CW: 25°C 500 m³/hr | IA: 6 bar oil-free',
-    /* 비교 대상 기존 설비 — (EQUIP MASTERDATA) 퀵서치. 부가 설명은 값에 합쳐 한 줄 (원본 HTML 방식) */
-    referenceEquip: 'RX-1001 (Polymer Reactor, Line #1, Waterford) — Same type, installed 2014, 10 years in service',
+    engSpec: 'Glass-lined reactor 10,000L, 6 bar design pressure, -20~250°C operating range, anchor agitator 0.5~120 rpm, CIP (Clean-in-Place) system integrated',
+    quality: 'ATEX Zone 1 rated, FDA-compliant wetted parts, SIL-2 safety integrity level, EU PED 2014/68/EU pressure equipment directive compliance',
+    /* Utility Requirements — TFT 는 표 형식 (사이트 용량 대비 검증용) */
+    utilities: [
+      { name: 'Electrical',     spec: '480V / 3ph / 60Hz — 75 kW' },
+      { name: 'Steam',          spec: '10 bar — 2,000 kg/hr' },
+      { name: 'Cooling Water',  spec: '25°C — 500 m³/hr' },
+      { name: 'Instrument Air', spec: '6 bar — oil-free' },
+    ],
+    /* 비교 대상 기존 설비 — (EQUIP MASTERDATA) 퀵서치 + 타입 요약 (TFT 2필드 구성) */
+    referenceEquip: 'RX-1001 (Polymer Reactor, Line #1, Waterford)',
+    refEquipType: 'Glass-Lined Reactor — 8,000L · installed 2014, 10 years in service',
     breakdownHistory: [
       { date: 'Nov 5, 2024', wo: 'WO-2024-04821', desc: 'Agitator seal leak — bearing wear after 8 years', downtime: '72 hrs',  cost: '$ 45,000' },
       { date: 'Jun 12, 2024', wo: 'WO-2024-02917', desc: 'Glass lining crack — thermal shock during CIP cycle', downtime: '120 hrs', cost: '$ 82,000' },
@@ -272,6 +381,8 @@ const capexCase = {
   /* Stage 8 — Design / Fab / Install (S-Curve + Timeline + Change Log + Issues) */
   stage8: {
     /* events = 포인트별 이벤트 라벨 (원본 eventLabels 이식) — 차트 dataLabel + 에디터 Event 행 */
+    /* Construction Progress (%) — TFT 재편으로 서브차트 4개 → 이 한 개로 통합 (2026-07-09).
+       key 'overall' 은 진도 에디터 cfg 조회용으로 유지 */
     overall: {
       labels: ['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
       plan:   [5, 12, 22, 38, 55, 70, 82, 93, 100],
@@ -279,12 +390,14 @@ const capexCase = {
       events: ['Contract signed', 'P&ID review', 'Design freeze', 'Fab delay start', 'Max delay point', 'FAT passed', 'Site install begin', 'SAT passed', 'Go-Live'],
       status: 'Recovered',
     },
-    subCharts: [
-      { key: 'design',     title: 'Design',                                labels: ['Mar','Apr','May'],        plan: [25, 70, 100],        actual: [20, 58, 100],        events: ['Design kickoff', 'P&ID approved', 'All drawings final'],                              status: 'On Schedule',           tone: 'success' },
-      { key: 'procure',    title: 'Procurement',                           labels: ['Apr','May','Jun'],        plan: [15, 55, 100],        actual: [22, 68, 100],        events: ['RFQ issued', 'Vendor selected', 'All POs placed'],                                    status: '2 days Ahead',          tone: 'accent'  },
-      { key: 'fab',        title: 'Fabrication',                           labels: ['May','Jun','Jul','Aug'],  plan: [12, 45, 80, 100],    actual: [8, 28, 58, 100],     events: ['Material ordered', 'Welding delayed', 'Assembly in progress', 'FAT passed'],          status: '3 days Delayed (recovered)', tone: 'warn' },
-      { key: 'install',    title: 'Installation (Site Prep + Mech + E&I)', labels: ['Aug','Sep','Oct','Nov'],  plan: [8, 35, 70, 100],     actual: [18, 50, 82, 100],    events: ['Site prep + parallel work', 'Mech install complete', 'E&I hookup done', 'SAT passed'], status: '5 days Ahead (parallel accel.)', tone: 'accent' },
-    ],
+    /* Budget vs. Actual Spending ($K 누적) — plan = Stage 1 Spend Schedule 월합계 누적,
+       actual = AR Tracker 실적 누적(7월 진행분까지) */
+    budgetCurve: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      plan:   [0, 5, 360, 758, 1155, 1510, 1813, 2041, 2268, 2445, 2520, 2520],
+      actual: [0, 3, 343, 753, 1138, 1500, 1620],
+      status: 'Tracking to plan',
+    },
     milestones: [
       { date: 'Jan 15, 2026', label: 'Investment Request',  status: 'on-time' },
       { date: 'Feb 10, 2026', label: 'Investment Review',   status: 'on-time' },
@@ -303,9 +416,71 @@ const capexCase = {
     issues: [
       { desc: 'Fabrication delayed 3 days → Recovered by running site prep in parallel. No impact on overall schedule.' },
     ],
+    /* ── M-CapEx TFT 추가분 (2026-07-09) ── */
+    /* Budget vs Actual — 월별 실적 집계 스냅샷 (7월 기준). Committed = 발주(PO) 확정액 */
+    budgetVsActual: {
+      total: '$ 2.80M', actual: '$ 1.62M', actualPct: '57.9% spent',
+      committed: '$ 2.56M', committedPct: '91.4% committed', remaining: '$ 1.18M',
+    },
+    /* Purchasing — 프로젝트 내 발주(PO) 현황. GR(Goods Receipt) 완료 시 AR Tracker 로 자동 집계 */
+    pos: [
+      { po: 'PO-4500078923', desc: 'Reactor Vessel',        vendor: 'Vendor A', amount: '$ 2,280,000', status: 'GR Complete' },
+      { po: 'PO-4500078950', desc: 'Installation Services', vendor: 'Vendor B', amount: '$ 185,000',   status: 'In Progress' },
+      { po: 'PO-4500078962', desc: 'Electrical Work',       vendor: 'Vendor C', amount: '$ 95,000',    status: 'Pending' },
+    ],
+    /* Fixed Assets — 재무 마감 연계: 이관 양식 → 재무 검증 → 고정자산 등재 */
+    fixedAsset: [
+      { role: 'Asset Transfer Form',  name: 'Sent by K. Park',      date: 'Nov 21, 2026' },
+      { role: 'Finance Validation',   name: 'Validated · A. Schmidt', date: 'Nov 24, 2026' },
+      { role: 'Fixed Asset Register', name: 'FA-2026-WF-0088',      date: 'Nov 25, 2026' },
+    ],
+    /* Maintenance 연계 — 신규 설비 CMMS 등록 + PM(예방보전) 스케줄 생성 */
+    maintenance: [
+      { role: 'Equipment Master',  name: 'RX-2001 (New Reactor)',  date: 'Registered in CMMS' },
+      { role: 'PM Schedule',       name: 'Created · 12 tasks',     date: 'First PM Dec 20, 2026' },
+    ],
   },
 
-  /* Stage 9 — Commissioning & Verification */
+  /* Stage 9 — AR Tracking & Forecast (M-CapEx TFT 신규, 2026-07-09)
+     Budget 컬럼은 Stage 1 Spend Schedule 월합계에서 파생(단일 출처) — 여기엔 실적/예측만.
+     GR·워크오더 청구 완료 시 자동 갱신되는 개념. Forecast 는 매월 10일까지 갱신 의무 */
+  tracking: {
+    currentIdx: 6,               /* July (0-base) — 현재 월 */
+    deadline: 'Jul 10, 2026',
+    actual:   [null, 3000, 340000, 410000, 385000, 362000, 120000, null, null, null, null, null],
+    forecast: [null, null, null,   null,   null,   null,   310000, 230000, 225000, 180000, 80000, null],
+  },
+
+  /* Stage 10 — Reporting (M-CapEx TFT) 사이트 롤업 대시보드 + Active Projects */
+  reporting: {
+    summary: {
+      budget: '$ 8,400,000', budgetSub: 'Waterford 2026',
+      spent: '$ 3,200,000',  spentSub: '38.1% of budget',
+      remaining: '$ 5,200,000',
+      active: '7', activeSub: '3 Growth · 2 EHS · 2 Maint.',
+    },
+    projects: [
+      { ar: 'WV26001', name: 'New Reactor — Polymer Line',   cat: 'Growth',      budget: '$ 2,800,000', actual: '$ 1,620,000', pct: '57.9%', status: 'In Execution', current: true },
+      { ar: 'WV26002', name: 'Cooling Tower Replacement',    cat: 'Maintenance', budget: '$ 450,000',   actual: '$ 380,000',   pct: '84.4%', status: 'In Execution' },
+      { ar: 'WV26003', name: 'Wastewater Treatment Upgrade', cat: 'EHS',         budget: '$ 1,200,000', actual: '$ 210,000',   pct: '17.5%', status: 'In Execution' },
+      { ar: 'WV26004', name: 'Lab Equipment Modernization',  cat: 'Technology',  budget: '$ 680,000',   actual: '$ 520,000',   pct: '76.5%', status: 'Commissioning' },
+      { ar: 'WV26005', name: 'Tank Farm Expansion',          cat: 'Growth',      budget: '$ 1,500,000', actual: '$ 95,000',    pct: '6.3%',  status: 'Procurement' },
+      { ar: 'WV26006', name: 'Fire Suppression System',      cat: 'EHS',         budget: '$ 920,000',   actual: '$ 312,000',   pct: '33.9%', status: 'In Execution' },
+      { ar: 'WV26007', name: 'Compressor Overhaul',          cat: 'Maintenance', budget: '$ 850,000',   actual: '$ 63,000',    pct: '7.4%',  status: 'AR Approval' },
+    ],
+    /* Site Budget vs Actual — 카테고리별 ($) */
+    categories: [
+      { name: 'Growth',         budget: 4300000, actual: 1715000 },
+      { name: 'EHS',            budget: 2120000, actual: 522000 },
+      { name: 'Infrastructure', budget: 400000,  actual: 180000 },
+      { name: 'Technology',     budget: 680000,  actual: 520000 },
+      { name: 'Productivity',   budget: 350000,  actual: 120000 },
+      { name: 'Maintenance',    budget: 1300000, actual: 443000 },
+    ],
+  },
+
+  /* Stage 9(구) — Commissioning & Verification — TFT 재편으로 스테이지에서 빠짐.
+     qualifications 는 AI Summary 등에서 계속 참조 */
   stage9: {
     qualifications: [
       { label: 'FAT (Factory Acceptance Test)',     status: 'Passed', date: 'Aug 20, 2026' },
