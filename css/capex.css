@@ -72,9 +72,15 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 5px;
-  font-size: 10.5px;
-  line-height: 1.3;
+  font-size: 13px;   /* Project Summary 전용이 되면서 10.5 → 13 (2026-07-09, 폰트 13px 이상 규칙) */
+  line-height: 1.45;
 }
+/* Project Summary 카드 — 아래 CAPEX Stages 단과 시각적 구분 (여백 + 행 간격, 2026-07-09 사용자 지정값) */
+#cpxProjSummary {
+  margin: 0px 0 20px;
+  padding: 0px 10px 20px 10px;
+}
+#cpxProjSummary .rt-keys { gap: 5px; }
 .rt-k {
   flex-shrink: 0;
   font-weight: 600;
@@ -741,6 +747,27 @@
 .detail-section .cpx-ccc-card.is-good { background: linear-gradient(135deg, rgba(122,148,80,0.22), rgba(122,148,80,0.07)); }
 .detail-section .cpx-ccc-card.is-good .cpx-ccc-val,
 .detail-section .cpx-ccc-card.is-good .cpx-ccc-top i { color: #5e7e3c; }
+/* 좌측 타임라인 번호 원형 — 상태 아이콘 대신 스테이지 번호 (TFT 참조 nav-step 방식, 2026-07-09 사용자 요청) */
+.rt-circle .rt-step-no {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--c-border); color: var(--c-text-soft);
+}
+.rt-circle.done .rt-step-no   { background: #899f6a; color: #fff; }
+.rt-circle.active .rt-step-no { background: var(--c-primary-d); color: #fff; }
+
+/* Spend Schedule 우측 Total 컬럼 구분 — 좌측 보더 + tfoot 토탈과 동일한 웜 베이지 (2026-07-09 사용자 요청) */
+.detail-section .cpx-ss-totcol {
+  border-left: 2px solid var(--c-border-strong);
+  background: #faf9f3;   /* .hoo-table tfoot td 와 동일 */
+  font-weight: 700;
+}
+
+/* 빈 금액 인풋의 $ 단위 숨김 — 값이 있거나 포커스일 때만 노출 (2026-07-09 사용자 요청) */
+.detail-section .cpx-money-field.is-empty .cpx-money-unit { opacity: 0; transition: opacity .15s ease; }
+.detail-section .cpx-money-field.is-empty:focus-within .cpx-money-unit { opacity: 0.5; }
+
 /* 오렌지(테라코타) 유리 변형 — TFT 참조에서 좌측 보더 주황인 카드 대응 (2026-07-09, 사용자 요청) */
 .detail-section .cpx-ccc-card.is-warn { background: linear-gradient(135deg, rgba(217,119,87,0.20), rgba(217,119,87,0.06)); }
 .detail-section .cpx-ccc-card.is-warn .cpx-ccc-val,

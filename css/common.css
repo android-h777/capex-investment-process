@@ -2140,7 +2140,7 @@ button{ font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
+  margin-bottom: 15px;   /* 18 → 15 (2026-07-09 사용자 지정값) */
   padding-bottom: 12px;
   border-bottom: 1px solid var(--c-border);
 }
@@ -2189,6 +2189,7 @@ button{ font-family: inherit; }
   align-items: center;
   padding-left: 0;
   gap: 2px;
+  margin: 4px 0px;   /* 스테이지 간 간격 (2026-07-09 사용자 지정값) */
 }
 .rt-group-compact .rt-circle{
   position: static;

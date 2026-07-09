@@ -49,7 +49,7 @@ const CPX_MASTER = {
     'Supply Chain',
   ],
   users: [
-    'James Wilson',
+    'JONGHO LEE',
     'Sarah Chen',
     'Michael Brown',
     'Anna Schmidt',
@@ -93,6 +93,35 @@ const CPX_MASTER = {
     'RFQ-2026-0035',
     'RFQ-2026-0029',
   ],
+  /* Stage 1/6 — (M-ERP FINANCIAL MASTERDATA) 계정 마스터: Description ↔ Account 페어.
+     Cost Estimate 의 Description 퀵서치 선택 시 Account 자동 채움 */
+  finAccounts: [
+    { desc: 'Investment - External Vendors', account: '200001400' },
+    { desc: 'Investment - Cap. Labor',       account: '200001400' },
+    { desc: 'Leasehold Improvements',        account: '291131003' },
+    { desc: 'Software',                      account: '292131000' },
+    { desc: 'Cap Engineering',               account: '200001400' },
+    { desc: 'Cap Interest',                  account: '185001400' },
+    { desc: 'Excess FIFO',                   account: '120122105' },
+    { desc: 'Expense - AR Related',          account: '596683000' },
+    { desc: 'Exp - Operating Lease',         account: '594602000' },
+    { desc: 'Other (VAT)',                   account: '' },
+  ],
+  /* 퀵서치용 평면 리스트 (위 페어에서 파생) */
+  finDescs: [
+    'Investment - External Vendors',
+    'Investment - Cap. Labor',
+    'Leasehold Improvements',
+    'Software',
+    'Cap Engineering',
+    'Cap Interest',
+    'Excess FIFO',
+    'Expense - AR Related',
+    'Exp - Operating Lease',
+    'Other (VAT)',
+  ],
+  finAccountNos: ['200001400', '291131003', '292131000', '185001400', '120122105', '596683000', '594602000'],
+
   /* Stage 4 — Gatekeeper Review (GATEKEEPER MASTERDATA) 사이트별 게이트키퍼 */
   gatekeepers: [
     'David Thompson — VP Operations, Waterford',
@@ -104,6 +133,15 @@ const CPX_MASTER = {
   /* Stage 1 — Idea Registration (M-CapEx TFT) Category / SubCategory 마스터 */
   categories: ['Maintenance', 'EHS', 'Infrastructure', 'Growth', 'Technology', 'Productivity'],
   subCategories: ['Preventive', 'Corrective', 'Capacity Expansion', 'Compliance', 'Optimization', 'Modernization', 'New Installation', 'Upgrade'],
+  /* Category → Sub Category 후보 (TFT: "Sub Category — to be defined" → 카테고리 연동 로직으로 구체화) */
+  subCatByCategory: {
+    Maintenance:    ['Preventive', 'Corrective', 'Upgrade'],
+    EHS:            ['Compliance', 'Corrective', 'Modernization'],
+    Infrastructure: ['New Installation', 'Modernization', 'Upgrade'],
+    Growth:         ['Capacity Expansion', 'New Installation', 'Upgrade'],
+    Technology:     ['Modernization', 'Optimization', 'Upgrade'],
+    Productivity:   ['Optimization', 'Capacity Expansion', 'Preventive'],
+  },
   /* Category 선택 → 필수 서류 자동 매핑 (TFT: "If select category information populates for documents needed") */
   categoryDocs: {
     Growth: [
@@ -154,7 +192,7 @@ const capexCase = {
   status: 'completed',
   currentNode: 'actual',
   lastMod: 'Last Mod. May 26, 2026 09:14 AM',
-  requester: { name: 'James Wilson', dept: 'Production', date: 'Jan 15, 2026' },
+  requester: { name: 'JONGHO LEE', dept: 'Production', date: 'Jan 15, 2026' },
 
   /* Stage 1 — Idea Registration (M-CapEx TFT 재편, 2026-07-09) */
   stage1: {
@@ -163,14 +201,15 @@ const capexCase = {
     category: 'Growth',             /* CPX_MASTER.categories */
     subCategory: 'Capacity Expansion',
     description: 'Polymer line at 95% utilization. $3,200,000 potential orders at risk in 2027 without expansion. +30% capacity needed. New reactor to be installed on existing foundation with piping tie-ins to current process infrastructure. Estimated 8-month implementation timeline from AR approval through commissioning.',
-    submitted: 'Submitted on Jan 18, 2026 by James Wilson',
-    /* Schedule — TFT 최소 구성: AR Approval / Procurement / Construction / (Commissioning) / Closure */
+    submitted: 'Submitted on Jan 18, 2026 by JONGHO LEE',
+    /* Schedule — TFT 최소 구성: AR Approval / Procurement / Construction / (Commissioning) / Closure.
+       사용자 입력(시작/종료 데이트피커) → 타임라인·Duration 동적 갱신 (2026-07-09) */
     schedule: [
-      { label: 'AR Approval',   date: 'Feb 1 – Feb 28',  note: '4 wks' },
-      { label: 'Procurement',   date: 'Mar 1 – Jun 30',  note: '4 mo'  },
-      { label: 'Construction',  date: 'Jul 1 – Oct 31',  note: '4 mo'  },
-      { label: 'Commissioning', date: 'Nov 1 – Nov 30',  note: '1 mo'  },
-      { label: 'Closure',       date: 'Dec 1 – Dec 31',  note: '1 mo'  },
+      { label: 'AR Approval',   start: 'Feb 1, 2026',  end: 'Feb 28, 2026' },
+      { label: 'Procurement',   start: 'Mar 1, 2026',  end: 'Jun 30, 2026' },
+      { label: 'Construction',  start: 'Jul 1, 2026',  end: 'Oct 31, 2026' },
+      { label: 'Commissioning', start: 'Nov 1, 2026',  end: 'Nov 30, 2026' },
+      { label: 'Closure',       start: 'Dec 1, 2026',  end: 'Dec 31, 2026' },
     ],
     /* Cost Estimate — 계정별 브레이크다운 (M-ERP Financial Master Data). null = 해당 없음.
        Total Project = Current AR + Prior Approved. 합계: 2,520,000 + 280,000 = 2,800,000 (= estBudget) */
@@ -186,13 +225,13 @@ const capexCase = {
       { desc: 'Exp - Operating Lease',         account: '594602000', current: null,    prior: null },
       { desc: 'Other (VAT)',                   account: null,        current: null,    prior: null },
     ],
-    /* Spend Schedule — 월별 지출 계획 ($, Jan~Dec). AR Tracker(9단계)의 Budget 원천.
-       월별 합계(355/397.5/…)가 9단계 트래커 Budget 컬럼과 일치해야 함 */
+    /* Spend Schedule — 월별 지출 계획 ($). 컬럼(월)은 위 Schedule 의 전체 기간에서 자동 생성,
+       금액은 전부 사용자 입력. 값은 'YYYY-MM' 키 맵 (다년 스케줄 대응). AR Tracker(9단계) Budget 의 원천 */
     spendSchedule: [
-      { label: 'Ext. Vendors', m: [null, null, 350000, 350000, 350000, 350000, 280000, 200000, 200000, 150000, 50000, null] },
-      { label: 'Cap. Labor',   m: [null, null, null,   null,   null,   null,   20000,  25000,  25000,  25000,  25000, null] },
-      { label: 'AR Expense',   m: [null, 5000, 5000,   5000,   5000,   5000,   3000,   3000,   2000,   2000,   null,  null] },
-      { label: 'Cap Eng.',     m: [null, null, null,   42500,  42500,  null,   null,   null,   null,   null,   null,  null] },
+      { label: 'Ext. Vendors', v: { '2026-03': 350000, '2026-04': 350000, '2026-05': 350000, '2026-06': 350000, '2026-07': 280000, '2026-08': 200000, '2026-09': 200000, '2026-10': 150000, '2026-11': 50000 } },
+      { label: 'Cap. Labor',   v: { '2026-07': 20000, '2026-08': 25000, '2026-09': 25000, '2026-10': 25000, '2026-11': 25000 } },
+      { label: 'AR Expense',   v: { '2026-02': 5000, '2026-03': 5000, '2026-04': 5000, '2026-05': 5000, '2026-06': 5000, '2026-07': 3000, '2026-08': 3000, '2026-09': 2000, '2026-10': 2000 } },
+      { label: 'Cap Eng.',     v: { '2026-04': 42500, '2026-05': 42500 } },
     ],
     /* 이하 기존 필드 — 타이틀바/서머리/Stage 2 산출식에서 계속 사용 */
     type: 'New Equipment — Capacity Expansion',
@@ -201,14 +240,14 @@ const capexCase = {
     purpose: '+30% capacity to meet 2027 demand and secure long-term supply contracts.',
     site: 'Waterford / PA (Performance Additives)',
     dept: 'Production',
-    requester: 'James Wilson',
+    requester: 'JONGHO LEE',
     estBudget: '2,800,000',
     requestDate: 'Jan 15, 2026',
     priority: 'High',
     targetCompletion: 'Q4 2026',
     /* Sign-off Chain — 담당자 지정 (Role: CPX_MASTER.signoffRoles / Name: CPX_MASTER.users 퀵서치) */
     signoffChain: [
-      { role: 'Requester',           name: 'James Wilson' },
+      { role: 'Requester',           name: 'JONGHO LEE' },
       { role: 'Department Approver',  name: 'Sarah Chen' },
       { role: 'Technical Approver',   name: 'Michael Brown' },
       { role: 'Finance Approver',     name: 'Anna Schmidt' },
@@ -281,7 +320,7 @@ const capexCase = {
     budgetCode: 'BU-PA-WF-2026-CAP-042',
     /* 날짜 — 미국식 표기 + 연도 포함 (타이틀바 Last Mod. 표기와 동일 톤) */
     approvalChain: [
-      { role: 'Dept. Mgr',    name: 'J. Wilson',   date: 'Feb 1, 2026'  },
+      { role: 'Dept. Mgr',    name: 'J. Lee',      date: 'Feb 1, 2026'  },
       { role: 'Finance Dir.', name: 'S. Kim',      date: 'Feb 4, 2026'  },
       { role: 'VP Ops',       name: 'D. Thompson', date: 'Feb 7, 2026'  },
       { role: 'CFO',          name: 'M. Brown',    date: 'Feb 10, 2026' },

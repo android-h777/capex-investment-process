@@ -81,9 +81,15 @@
     <!-- Left: Workflow (10 Stages) -->
     <aside class="detail-left">
       <div class="routing-panel glass-panel">
+        <!-- Project Summary — TFT 참조 사이드바 상단 요약 (내용은 detail.js renderRouting 이 주입) -->
+        <div class="routing-header">
+          <h3><i class="material-icons">assignment</i>Project Summary</h3>
+          <span class="cpx-ai-aura-wrap"><a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="btnSummary"><i class="material-icons">auto_awesome</i><span class="label">AI Summary</span></a></span>
+        </div>
+        <div class="rt-card rt-card-keys" id="cpxProjSummary"></div>
+
         <div class="routing-header">
           <h3><i class="material-icons">account_tree</i>CAPEX Stages</h3>
-          <span class="cpx-ai-aura-wrap"><a href="javascript:;" class="hBtn hBtn-sm hViva waves-effect" id="btnSummary"><i class="material-icons">auto_awesome</i><span class="label">AI Summary</span></a></span>
         </div>
 
         <div class="routing-timeline" id="routingTimeline"></div>
@@ -97,7 +103,7 @@
       <div class="detail-title-bar glass-panel">
         <div class="detail-title-left">
           <span class="detail-type-badge" id="titleBadge">Strategic Growth</span>
-          <h2><span class="detail-mr-id" id="dHeadId">[CAPEX-2026-WF-0042]</span><span class="detail-mr-desc" id="dHeadDesc">New Reactor — Polymer Line Capacity Expansion</span></h2>
+          <h2><span class="detail-mr-id" id="dHeadId">[WV26001]</span><span class="detail-mr-desc" id="dHeadDesc">New Reactor — Polymer Line Capacity Expansion</span></h2>
         </div>
         <div class="detail-title-right">
           <span class="detail-last-mod" id="titleLastMod">Last Mod. May 26, 2026 09:14 AM</span>

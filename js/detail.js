@@ -67,66 +67,7 @@ function applyTitleBar(opts) {
  *   왼쪽만 읽어도 프로젝트 핵심을 다 취득하는 개념.
  *   라인 { k?: 라벨, v: 값, sub?: 보조표기, tone?: good|warn|accent|hl }
  * ================================================================= */
-function stageKeyLines(key) {
-  const c = capexCase;
-  switch (key) {
-    case 'request': return [
-      { v: `${c.stage1.ideaNo} · ${c.stage1.category}`, tone: 'hl' },
-      { k: 'Budget', v: `$ ${c.stage1.estBudget}` },
-    ];
-    case 'feasibility': {
-      const s2 = calcStage2();
-      return [
-        { k: 'ROI',     v: `${s2.roi.toFixed(1)}%`, tone: 'hl' },
-        { k: 'Payback', v: s2.payback != null ? `${s2.payback.toFixed(1)} yr` : '—' },
-      ];
-    }
-    case 'spec': return [
-      { k: 'Ref.', v: c.stage4.referenceEquip.split(' ')[0], tone: 'hl' },
-      { v: 'CMMS reviewed · findings derived' },
-    ];
-    case 'gatekeeper': return [
-      { v: c.gatekeeper.name.split(' — ')[0] },
-      { k: 'Decision', v: c.gatekeeper.decision, tone: 'hl' },
-    ];
-    case 'approval': return [
-      { v: `AR ${c.stage3.arNo}`, tone: 'hl' },
-      { k: 'Status', v: 'Fully Approved' },
-    ];
-    case 'budget': return [
-      { k: 'Approved', v: c.stage3.approvedAmount, tone: 'hl' },
-      { v: 'No supplement' },
-    ];
-    case 'tbe': {
-      const wT = c.stage5.vendors.find(v => v.winner);
-      const wC = c.stage6.vendors.find(v => v.winner);
-      return [
-        { k: 'TBE', v: `${wT.name} · ${wT.score}` },
-        { k: 'CBE', v: `${wC.name} · ${wC.negotiated}`, tone: 'hl' },
-      ];
-    }
-    case 'execution': return [
-      { k: 'Spend', v: `${c.stage8.budgetVsActual.actual} · ${c.stage8.budgetVsActual.actualPct.split(' ')[0]}` },
-      { k: 'Progress', v: c.stage8.overall.status, tone: 'hl' },
-    ];
-    case 'tracking': return [
-      { k: 'YTD', v: '$1.62M', tone: 'hl' },
-      { v: 'Forecast $2.53M / yr' },
-    ];
-    case 'actual': {
-      /* Exp 는 패널과 동일하게 calcStage2() live 산출 (Stage 2 입력 바뀌어도 드리프트 X) */
-      const s2  = calcStage2();
-      const roi = c.stage10.roiCompare.find(r => r.label === 'ROI (%)');
-      const pb  = c.stage10.roiCompare.find(r => r.label === 'Payback Period');
-      const expPb = s2.payback != null ? `${s2.payback.toFixed(1)} yr` : '—';
-      return [
-        { k: 'ROI',     v: roi.actual, sub: `Exp ${s2.roi.toFixed(1)}%`, tone: 'hl' },
-        { k: 'Payback', v: pb.actual,  sub: `Exp ${expPb}` },
-      ];
-    }
-  }
-  return [];
-}
+/* stageKeyLines — 단계별 키라인은 Project Summary 로 대체되어 제거 (2026-07-09) */
 function keyLineHtml(L) {
   return `<div class="rt-key">`
     + (L.k ? `<span class="rt-k">${L.k}</span>` : '')
@@ -147,11 +88,22 @@ function renderRouting() {
   if (!wrap) return;
   const states = calcNodeStates(capexFlow, pCurrentNode);
 
+  /* Project Summary — 사이드바 상단 요약 (TFT 참조, 2026-07-09). 단계별 키라인 대체 */
+  const sm = document.getElementById('cpxProjSummary');
+  if (sm) {
+    const c = capexCase;
+    sm.innerHTML = `<div class="rt-keys">` + [
+      { k: 'Project ID',   v: c.stage3.arNo, tone: 'hl' },
+      { k: 'Project Name', v: c.title },
+      { k: 'Site',         v: c.stage1.site.split(' (')[0] },
+      { k: 'Budget',       v: `$ ${c.stage1.estBudget}` },
+      { k: 'Status',       v: c.status === 'completed' ? 'Completed' : 'In Execution' },
+    ].map(keyLineHtml).join('') + `</div>`;
+  }
+
   let html = '';
   states.forEach((n, idx) => {
-    const ico = n.state === 'done'    ? 'check_circle'
-              : n.state === 'current' ? 'play_circle'
-              :                         'radio_button_unchecked';
+    /* 상태 아이콘 → 번호 원형 (TFT 참조 nav-step 방식, 2026-07-09) — 상태는 원 배경색으로 표현 */
     const cls = n.state === 'done'    ? ' done'
               : n.state === 'current' ? ' active'
               : '';
@@ -160,11 +112,11 @@ function renderRouting() {
                  : '';
 
     const role = n.label;
-    const keyLines = stageKeyLines(n.key).map(keyLineHtml).join('');
 
+    /* 단계별 키라인(써머리)은 상단 Project Summary 로 이동 — 카드는 스테이지명만 (TFT 참조, 2026-07-09) */
     html += `<div class="rt-group rt-group-compact">
       <div class="rt-stage">
-        <div class="rt-circle${cls}"><i class="material-icons">${ico}</i></div>
+        <div class="rt-circle${cls}"><span class="rt-step-no">${n.no}</span></div>
         <div class="rt-stage-label">${role}</div>
       </div>
       <div class="rt-cards">
@@ -172,7 +124,6 @@ function renderRouting() {
           <div class="rt-card-info">
             <span class="rt-role">${role}</span>
           </div>
-          <div class="rt-keys">${keyLines}</div>
         </div>
       </div>
     </div>`;
@@ -498,8 +449,11 @@ function renderStageTracking() {
   const t = capexCase.tracking;
   const ss = capexCase.stage1.spendSchedule;
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  /* Budget = Stage 1 Spend Schedule 월합계 (단일 출처) */
-  const b = months.map((_, i) => ss.reduce((a, r) => a + (r.m[i] || 0), 0) || null);
+  /* Budget = Stage 1 Spend Schedule 월합계 (단일 출처, 'YYYY-MM' 키 맵 — 트래커는 2026년 뷰) */
+  const b = months.map((_, i) => {
+    const key = `2026-${String(i + 1).padStart(2, '0')}`;
+    return ss.reduce((a, r) => a + (r.v[key] || 0), 0) || null;
+  });
   const k = v => v == null ? '—' : Math.round(v / 1000).toLocaleString('en-US');
 
   let bSum = 0, aSum = 0, fSum = 0, ytdB = 0;
@@ -585,74 +539,148 @@ function renderStageTracking() {
 /* 금액 or '—' (좌측 정렬 셀용 아님 — hoo-num 셀 전용) */
 function ceFmt(n) { return n == null ? '—' : '$ ' + n.toLocaleString('en-US'); }
 
-function renderStage1() {
-  const d = capexCase.stage1;
-  const MD = window.CPX_MASTER || CPX_MASTER;  /* Materialize 전역 M 과 충돌 방지 */
-
-  /* Cost Estimate rows — Current AR 만 편집(cpx-money), Total = Current + Prior 자동 */
-  const ceRows = d.costEstimate.map(r => `
+/* Cost Estimate 행 — Description/Account = M-ERP Financial Master 퀵서치,
+   Current AR = 편집(cpx-money), Total = Current + Prior 자동. 행 추가/삭제 지원 */
+function ceRowHtml(r) {
+  r = r || {};
+  return `
     <tr>
-      <td>${r.desc}</td>
-      <td>${r.account || '—'}</td>
-      <td class="hoo-num">
-        <div class="aniInput cpx-money-field">
-          <span class="cpx-money-unit">$</span>
-          <input type="text" class="browser-default cpx-money cpx-ce-cur" value="${r.current != null ? r.current.toLocaleString('en-US') : ''}" inputmode="numeric" data-prior="${r.prior || 0}">
+      <td>
+        <div class="aniInput cpx-qs-field input-field">
+          <input type="text" class="browser-default cpx-quicksearch cpx-ce-desc" value="${r.desc || ''}" data-master="finDescs" placeholder="Quick search…" autocomplete="off">
+          <i class="material-icons cpx-qs-ico">search</i>
           <span class="focus-border"></span>
         </div>
       </td>
-      <td class="hoo-num">${ceFmt(r.prior)}</td>
+      <td>
+        <div class="aniInput cpx-qs-field input-field">
+          <input type="text" class="browser-default cpx-quicksearch cpx-ce-acct" value="${r.account || ''}" data-master="finAccountNos" placeholder="Quick search…" autocomplete="off">
+          <i class="material-icons cpx-qs-ico">search</i>
+          <span class="focus-border"></span>
+        </div>
+      </td>
+      <td class="hoo-num">
+        <div class="aniInput cpx-money-field">
+          <span class="cpx-money-unit">$</span>
+          <input type="text" class="browser-default cpx-money cpx-ce-cur" value="${r.current != null ? r.current.toLocaleString('en-US') : ''}" inputmode="numeric">
+          <span class="focus-border"></span>
+        </div>
+      </td>
+      <td class="hoo-num">
+        <div class="aniInput cpx-money-field">
+          <span class="cpx-money-unit">$</span>
+          <input type="text" class="browser-default cpx-money cpx-ce-prior" value="${r.prior != null ? r.prior.toLocaleString('en-US') : ''}" inputmode="numeric">
+          <span class="focus-border"></span>
+        </div>
+      </td>
       <td class="hoo-num"><span class="cpx-ce-rowtotal">${ceFmt(r.current != null || r.prior != null ? (r.current || 0) + (r.prior || 0) : null)}</span></td>
-    </tr>`).join('');
+      <td class="hoo-x"><i class="material-icons">close</i></td>
+    </tr>`;
+}
 
-  /* Spend Schedule — TFT 3표 구성: Investment(+Total Invest. 소계) / AR Expense / Cap Engineering */
-  const ssMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const ssTable = (title, labels, totalLabel) => {
-    const rows = d.spendSchedule.filter(r => labels.includes(r.label));
+/* ── Stage 1 Spend Schedule — 월 컬럼 = Schedule 전체 기간에서 자동 생성, 금액 = 전부 입력 ── */
+function schedMonthSpan() {
+  const rows = capexCase.stage1.schedule;
+  let min = null, max = null;
+  rows.forEach(r => {
+    const a = new Date(r.start), b = new Date(r.end);
+    if (!isNaN(a) && (min === null || a < min)) min = a;
+    if (!isNaN(b) && (max === null || b > max)) max = b;
+  });
+  if (!min || !max || max < min) return [];
+  const out = [];
+  const d = new Date(min.getFullYear(), min.getMonth(), 1);
+  const end = new Date(max.getFullYear(), max.getMonth(), 1);
+  while (d <= end && out.length < 36) {   /* 3년 가드 (TFT: 3-5 years schedule) */
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    /* 연도는 항상 표기 — Feb ’26 형식 (2026-07-09 사용자 요청) */
+    const label = `${d.toLocaleString('en-US', { month: 'short' })} ’${String(d.getFullYear()).slice(2)}`;
+    out.push({ key, label });
+    d.setMonth(d.getMonth() + 1);
+  }
+  return out;
+}
+function ssRowTotalNum(r) { return Object.values(r.v).reduce((a, b) => a + (b || 0), 0); }
+function spendTablesHtml() {
+  const months = schedMonthSpan();
+  const all = capexCase.stage1.spendSchedule;
+
+  const cell = (r, key) => `
+      <td class="hoo-num">
+        <div class="aniInput"><input type="text" class="browser-default cpx-money cpx-ss-input" data-row="${r.label}" data-key="${key}" value="${r.v[key] != null ? r.v[key].toLocaleString('en-US') : ''}" inputmode="numeric"><span class="focus-border"></span></div>
+      </td>`;
+
+  const table = (title, labels, totalLabel) => {
+    const rows = all.filter(r => labels.includes(r.label));
     const body = rows.map(r => `
       <tr>
         <td>${r.label}</td>
-        ${r.m.map(v => `<td class="hoo-num">${v == null ? '—' : v.toLocaleString('en-US')}</td>`).join('')}
-        <td class="hoo-num">${r.m.reduce((a, b) => a + (b || 0), 0).toLocaleString('en-US')}</td>
+        ${months.map(mo => cell(r, mo.key)).join('')}
+        <td class="hoo-num cpx-ss-totcol"><span class="cpx-ss-rowtotal">${ssRowTotalNum(r).toLocaleString('en-US')}</span></td>
       </tr>`).join('');
     const foot = !totalLabel ? '' : `
-        <tfoot><tr>
+        <tfoot><tr data-labels="${labels.join('|')}">
           <td class="hoo-tfoot-label">${totalLabel}</td>
-          ${ssMonths.map((_, i) => {
-            const v = rows.reduce((a, r) => a + (r.m[i] || 0), 0);
-            return `<td class="hoo-num hoo-tfoot-value">${v ? v.toLocaleString('en-US') : '—'}</td>`;
+          ${months.map(mo => {
+            const v = rows.reduce((a, r) => a + (r.v[mo.key] || 0), 0);
+            return `<td class="hoo-num hoo-tfoot-value cpx-ss-sub" data-key="${mo.key}">${v ? v.toLocaleString('en-US') : '—'}</td>`;
           }).join('')}
-          <td class="hoo-num hoo-tfoot-value">${rows.reduce((a, r) => a + r.m.reduce((x, y) => x + (y || 0), 0), 0).toLocaleString('en-US')}</td>
+          <td class="hoo-num hoo-tfoot-value cpx-ss-totcol cpx-ss-subtot">${rows.reduce((a, r) => a + ssRowTotalNum(r), 0).toLocaleString('en-US')}</td>
         </tr></tfoot>`;
     return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>${title}</h5>
     <div class="hoo-spec-table">
       <table class="hoo-table">
-        <colgroup><col style="width:11%">${ssMonths.map(() => '<col>').join('')}<col style="width:9%"></colgroup>
-        <thead><tr><th class="hoo-th-key">Category</th>${ssMonths.map(mo => `<th class="hoo-th-num">${mo}</th>`).join('')}<th class="hoo-th-num">Total</th></tr></thead>
+        <colgroup><col style="width:11%">${months.map(() => '<col>').join('')}<col style="width:9%"></colgroup>
+        <thead><tr><th class="hoo-th-key">Category</th>${months.map(mo => `<th class="hoo-th-num">${mo.label}</th>`).join('')}<th class="hoo-th-num">Total</th></tr></thead>
         <tbody>${body}</tbody>
         ${foot}
       </table>
     </div>`;
   };
 
-  /* Schedule — Stage 8 Milestone Timeline(cpx-tl) 어법 재사용 (계획 단계라 상태색 없음) */
-  const schedItems = d.schedule.map(s => `
+  return table('Monthly Investment Spending Estimate ($)', ['Ext. Vendors', 'Cap. Labor'], 'Total Invest.')
+       + table('Monthly AR Related Expense Estimate ($)', ['AR Expense'])
+       + table('Monthly Capitalizable Engineering Estimate ($)', ['Cap Eng.']);
+}
+
+/* ── Stage 1 Schedule — 입력(시작/종료) → 타임라인·Duration 동적 갱신 ── */
+function schedShort(s) { return String(s || '').replace(/,\s*\d{4}$/, ''); }   /* 'Feb 1, 2026' → 'Feb 1' */
+function schedTlItemsHtml(rows) {
+  return rows.map(s => `
     <div class="cpx-tl-item">
       <div class="cpx-tl-dot"></div>
-      <div class="cpx-tl-date">${s.date}</div>
+      <div class="cpx-tl-date">${schedShort(s.start)} – ${schedShort(s.end)}</div>
       <div class="cpx-tl-label">${s.label}</div>
-      <div class="cpx-tl-note">${s.note || ''}</div>
     </div>`).join('');
+}
+
+function renderStage1() {
+  const d = capexCase.stage1;
+  const MD = window.CPX_MASTER || CPX_MASTER;  /* Materialize 전역 M 과 충돌 방지 */
+
+  const ceRows = d.costEstimate.map(ceRowHtml).join('');
+
+  /* Spend Schedule — 월 컬럼은 Schedule 기간 파생, 금액 전부 입력 (spendTablesHtml, 스케줄 변경 시 재생성) */
+
+  /* Schedule — Stage 8 Milestone Timeline(cpx-tl) 어법 재사용. 아래 입력 표와 동적 연동 */
+  const schedInputRows = d.schedule.map((s, i) => `
+    <tr>
+      <td>${s.label}</td>
+      <td><div class="aniInput"><input type="text" class="browser-default cpx-date cpx-sched-input" data-i="${i}" data-field="start" value="${s.start}"><span class="focus-border"></span></div></td>
+      <td><div class="aniInput"><input type="text" class="browser-default cpx-date cpx-sched-input" data-i="${i}" data-field="end" value="${s.end}"><span class="focus-border"></span></div></td>
+    </tr>`).join('');
 
   return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>Basic Information</h5>
     <div class="form-grid">
-
       <div class="form-group span-2">
         <label>Idea Title</label>
         <div class="aniInput"><input type="text" class="browser-default" value="${d.title}"><span class="focus-border"></span></div>
       </div>
+    </div>
+
+    <div class="form-grid col-3">
 
       <div class="form-group">
         <label>Idea Number ${tip('Auto-generated per site (e.g. SVLL-0001, WTFD-0042)')}</label>
@@ -677,6 +705,10 @@ function renderStage1() {
         </div>
       </div>
 
+    </div>
+
+    <div class="form-grid">
+
       <div class="form-group">
         <label>Category</label>
         <div class="bi-select-wrap">
@@ -688,11 +720,10 @@ function renderStage1() {
       </div>
 
       <div class="form-group">
-        <label>Sub Category</label>
+        <label>Sub Category ${tip('Options depend on the selected Category')}</label>
         <div class="bi-select-wrap">
-          <select class="bi-select browser-default">
-            <option value="">Select…</option>
-            ${MD.subCategories.map(sc => `<option ${sc === d.subCategory ? 'selected' : ''}>${sc}</option>`).join('')}
+          <select class="bi-select browser-default" id="cpxSubCategory">
+            ${subCatOptionsHtml(d.category, d.subCategory)}
           </select>
         </div>
       </div>
@@ -704,7 +735,7 @@ function renderStage1() {
 
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Category Metrics</h5>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Category Metrics <small id="cpxCatDocsCat">— required documents for “${d.category}”</small></h5>
     <div class="hoo-spec-table">
       <table class="hoo-table">
         <colgroup><col style="width:48px"><col style="width:34%"><col></colgroup>
@@ -713,17 +744,29 @@ function renderStage1() {
       </table>
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Schedule</h5>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Schedule <small>— dates below drive the timeline</small></h5>
     <div class="cpx-tl">
       <div class="cpx-tl-line"></div>
-      <div class="cpx-tl-items">${schedItems}</div>
+      <div class="cpx-tl-items" id="cpxSchedItems">${schedTlItemsHtml(d.schedule)}</div>
+    </div>
+    <div class="hoo-spec-table">
+      <table class="hoo-table" id="cpxSchedTable">
+        <colgroup><col style="width:30%"><col style="width:35%"><col style="width:35%"></colgroup>
+        <thead><tr><th class="hoo-th-key">Phase</th><th>Start Date <span class="hoo-req">*</span></th><th>End Date <span class="hoo-req">*</span></th></tr></thead>
+        <tbody id="cpxSchedBody">${schedInputRows}</tbody>
+      </table>
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Cost Estimate <small>(Total = Current AR + Prior Approved)</small></h5>
-    <div class="hoo-spec-table">
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Cost Estimate <small>(Total = Current AR + Prior Approved · M-ERP Financial Master Data)</small></h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxCeAdd"><i class="material-icons">add</i><span class="label">Add row</span></a>
+      </div>
+    </div>
+    <div class="hoo-spec-table cpx-signoff-table"><!-- cpx-signoff-table = 표 내부 퀵서치 스킨 + 드롭다운 overflow 해제 (Sign-off 와 동일 양식) -->
       <table class="hoo-table" id="cpxCeTable">
-        <colgroup><col style="width:30%"><col style="width:14%"><col style="width:20%"><col style="width:18%"><col style="width:18%"></colgroup>
-        <thead><tr><th class="hoo-th-key">Description</th><th>Account</th><th class="hoo-th-num">Current AR <span class="hoo-req">*</span></th><th class="hoo-th-num">Prior Approved</th><th class="hoo-th-num">Total Project</th></tr></thead>
+        <colgroup><col style="width:28%"><col style="width:14%"><col style="width:19%"><col style="width:17%"><col style="width:17%"><col style="width:44px"></colgroup>
+        <thead><tr><th class="hoo-th-key">Description <span class="hoo-req">*</span></th><th class="hoo-th-key">Account</th><th class="hoo-th-num">Current AR <span class="hoo-req">*</span></th><th class="hoo-th-num">Prior Approved</th><th class="hoo-th-num">Total Project</th><th></th></tr></thead>
         <tbody id="cpxCeBody">${ceRows}</tbody>
         <tfoot>
           <tr>
@@ -731,14 +774,13 @@ function renderStage1() {
             <td class="hoo-num hoo-tfoot-value" id="cpxCeCurTotal"></td>
             <td class="hoo-num hoo-tfoot-value" id="cpxCePriorTotal"></td>
             <td class="hoo-num hoo-tfoot-value" id="cpxCeGrandTotal"></td>
+            <td></td>
           </tr>
         </tfoot>
       </table>
     </div>
 
-    ${ssTable('Monthly Investment Spending Estimate ($)', ['Ext. Vendors', 'Cap. Labor'], 'Total Invest.')}
-    ${ssTable('Monthly AR Related Expense Estimate ($)', ['AR Expense'])}
-    ${ssTable('Monthly Capitalizable Engineering Estimate ($)', ['Cap Eng.'])}
+    <div id="cpxSpendWrap">${spendTablesHtml()}</div>
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Submission</h5>
     <div class="form-grid">
@@ -748,84 +790,10 @@ function renderStage1() {
       </div>
     </div>
 
-    <div class="bi-block-head">
-      <h5 class="bi-block-title"><span class="bi-bar"></span>Sign-off Chain</h5>
-      <div class="bi-block-meta">
-        <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxSignoffAdd"><i class="material-icons">add</i><span class="label">Add row</span></a>
-      </div>
-    </div>
-    <div class="hoo-spec-table cpx-signoff-table">
-      <table class="hoo-table" id="cpxSignoffTable">
-        <colgroup><col style="width:48px"><col style="width:34%"><col><col style="width:44px"></colgroup>
-        <thead><tr><th>No.</th><th class="hoo-th-key">Role <span class="hoo-req">*</span></th><th class="hoo-th-key">Name</th><th></th></tr></thead>
-        <tbody id="cpxSignoffBody">
-          ${d.signoffChain.map((r, i) => signoffRowHtml(r, i)).join('')}
-        </tbody>
-      </table>
-    </div>
   `;
 }
 
-/* =================================================================
- * Stage 1 — Sign-off Chain (담당자 지정)
- *   Role = combo(CPX_MASTER.signoffRoles) / Name = 퀵서치(CPX_MASTER.users)
- *   행 추가(우상단 Add row) / 행 삭제(hoo-x) — hoo-table 양식 그대로
- * ================================================================= */
-function signoffRoleOptions(selected) {
-  const roles = (window.CPX_MASTER || CPX_MASTER).signoffRoles || [];
-  return ['<option value="">Select…</option>']
-    .concat(roles.map(r => `<option ${r === selected ? 'selected' : ''}>${r}</option>`))
-    .join('');
-}
-function signoffRowHtml(row, i) {
-  const r = row || {};
-  return `
-    <tr>
-      <td class="hoo-no">${i + 1}</td>
-      <td>
-        <div class="bi-select-wrap">
-          <select class="bi-select browser-default cpx-signoff-role">${signoffRoleOptions(r.role)}</select>
-        </div>
-      </td>
-      <td>
-        <div class="aniInput cpx-qs-field input-field">
-          <input type="text" class="browser-default cpx-quicksearch cpx-signoff-name" value="${r.name || ''}" data-master="users" placeholder="Quick search…" autocomplete="off">
-          <i class="material-icons cpx-qs-ico">search</i>
-          <span class="focus-border"></span>
-        </div>
-      </td>
-      <td class="hoo-x"><i class="material-icons">close</i></td>
-    </tr>`;
-}
-function renumberSignoff(tbody) {
-  tbody.querySelectorAll(':scope > tr').forEach((tr, i) => {
-    const no = tr.querySelector('.hoo-no');
-    if (no) no.textContent = i + 1;
-  });
-}
-function bindSignoffChain() {
-  const table = document.getElementById('cpxSignoffTable');
-  const tbody = document.getElementById('cpxSignoffBody');
-  const addBtn = document.getElementById('cpxSignoffAdd');
-  if (!table || !tbody) return;
-
-  /* 행 추가 — 빈 행 append 후 해당 행만 퀵서치/셀렉트 재바인딩 */
-  addBtn?.addEventListener('click', () => {
-    tbody.insertAdjacentHTML('beforeend', signoffRowHtml({}, tbody.children.length));
-    const tr = tbody.lastElementChild;
-    bindQuickSearch(tr);
-    bindSelectChevron(tr);
-    renumberSignoff(tbody);
-  });
-
-  /* 행 삭제 — hoo-x 이벤트 위임 */
-  tbody.addEventListener('click', (e) => {
-    const x = e.target.closest('.hoo-x');
-    if (!x) return;
-    x.closest('tr')?.remove();
-    renumberSignoff(tbody);
-  });
-}
+/* Sign-off Chain — TFT 재편으로 Stage 1 에서 제거 (2026-07-09 사용자 결정) */
 
 /* =================================================================
  * Stage 1 — Category Metrics (필수 서류 자동 매핑)
@@ -843,15 +811,127 @@ function catDocsRowsHtml(category) {
       <td>${doc.why}</td>
     </tr>`).join('');
 }
+/* Sub Category 옵션 — 선택된 Category 에 연동 (CPX_MASTER.subCatByCategory) */
+function subCatOptionsHtml(category, selected) {
+  const MD = window.CPX_MASTER || CPX_MASTER;
+  const opts = MD.subCatByCategory[category] || MD.subCategories;
+  return ['<option value="">Select…</option>']
+    .concat(opts.map(sc => `<option ${sc === selected ? 'selected' : ''}>${sc}</option>`))
+    .join('');
+}
+
 function bindCategoryDocs() {
   const sel = document.getElementById('cpxCategory');
   const tbody = document.getElementById('cpxCatDocsBody');
   if (!sel || !tbody) return;
   sel.addEventListener('change', () => {
     const cat = sel.value;
+
+    /* ① 필수 서류 표 재구성 + 행 등장 애니메이션 */
     tbody.innerHTML = catDocsRowsHtml(cat);
+    tbody.querySelectorAll(':scope > tr').forEach(tr => tr.classList.add('animate__animated', 'animate__fadeIn'));
+
+    /* ② 타이틀 문구에 선택 카테고리 반영 */
+    const cap = document.getElementById('cpxCatDocsCat');
+    if (cap) cap.textContent = cat ? `— required documents for “${cat}”` : '— select a category';
+
+    /* ③ Sub Category 옵션을 카테고리에 맞게 재구성 (기존 선택이 유효하면 유지) */
+    const sub = document.getElementById('cpxSubCategory');
+    if (sub) {
+      const keep = sub.value;
+      sub.innerHTML = subCatOptionsHtml(cat, keep);
+      if (sub.value !== keep) sub.value = '';
+    }
+
+    /* ④ 피드백 토스트 */
     const n = ((window.CPX_MASTER || CPX_MASTER).categoryDocs[cat] || []).length;
-    if (window.M && cat) M.toast({ html: `${cat} — ${n} required document${n === 1 ? '' : 's'} loaded` });
+    if (window.M && cat) M.toast({ html: `${cat} — ${n} required document${n === 1 ? '' : 's'} · sub categories updated` });
+  });
+}
+
+/* =================================================================
+ * Stage 1 — Schedule 입력 → 타임라인 동적 갱신
+ *   표의 시작/종료(데이트피커 or 직접 입력) 변경 → data 반영 후
+ *   타임라인 아이템·Duration 셀 재계산 (TFT: "Build out a schedule" 입력 요건)
+ * ================================================================= */
+function bindSchedule() {
+  const tbody = document.getElementById('cpxSchedBody');
+  const tl = document.getElementById('cpxSchedItems');
+  if (!tbody || !tl) return;
+  const rows = capexCase.stage1.schedule;
+
+  /* 변경된 요소만 살짝 플립 — 값이 바뀌었다는 시각 피드백 (animate.css) */
+  const flip = (el) => {
+    if (!el) return;
+    el.classList.remove('animate__animated', 'animate__flipInX');
+    void el.offsetWidth;   /* reflow — 연속 변경에도 애니메이션 재생 */
+    el.classList.add('animate__animated', 'animate__flipInX');
+  };
+
+  const apply = (inp, animate) => {
+    const idx = +inp.dataset.i;
+    rows[idx][inp.dataset.field] = inp.value;
+    tl.innerHTML = schedTlItemsHtml(rows);
+    if (animate) flip(tl.children[idx]);   /* 바뀐 페이즈의 타임라인 아이템만 플립 */
+  };
+  /* change = 데이트피커 선택 확정(onClose 디스패치) → 플립 + Spend Schedule 월 컬럼 재생성
+     input = 직접 타이핑 → 조용히 갱신 (컬럼 재생성은 확정 시에만 — 타이핑 중 재생성 방지) */
+  tbody.addEventListener('change', (e) => {
+    const inp = e.target.closest('.cpx-sched-input');
+    if (!inp) return;
+    apply(inp, true);
+    rebuildSpendTables();
+  });
+  tbody.addEventListener('input',  (e) => { const inp = e.target.closest('.cpx-sched-input'); if (inp) apply(inp, false); });
+}
+
+/* =================================================================
+ * Stage 1 — Spend Schedule 입력/재생성
+ *   월 금액 입력 → data(v 맵) 반영 + 행 Total·소계 갱신 + Stage 9 트래커 재렌더.
+ *   Schedule 기간 변경 → 월 컬럼 재생성 (bindSchedule 에서 호출)
+ * ================================================================= */
+function refreshTrackingStage() {
+  const body = document.querySelector('.detail-section.stage-tracking .stage-body');
+  if (body) body.innerHTML = renderStageTracking();   /* Budget = Spend Schedule 파생이라 함께 갱신 */
+}
+function rebuildSpendTables() {
+  const wrap = document.getElementById('cpxSpendWrap');
+  if (!wrap) return;
+  wrap.innerHTML = spendTablesHtml();
+  bindMoneyInputs(wrap);
+  refreshTrackingStage();
+}
+function bindSpendSchedule() {
+  const wrap = document.getElementById('cpxSpendWrap');
+  if (!wrap) return;
+  wrap.addEventListener('input', (e) => {
+    const inp = e.target.closest('.cpx-ss-input');
+    if (!inp) return;
+    const row = capexCase.stage1.spendSchedule.find(r => r.label === inp.dataset.row);
+    if (!row) return;
+
+    /* data 반영 (빈값 = 삭제) */
+    const n = parseMoneyNum(inp.value);
+    if (n) row.v[inp.dataset.key] = n; else delete row.v[inp.dataset.key];
+
+    /* 행 Total */
+    const rt = inp.closest('tr')?.querySelector('.cpx-ss-rowtotal');
+    if (rt) rt.textContent = ssRowTotalNum(row).toLocaleString('en-US');
+
+    /* 소계(tfoot) — 해당 표의 data-labels 기준 재합산 */
+    const foot = inp.closest('table')?.querySelector('tfoot tr[data-labels]');
+    if (foot) {
+      const rows = capexCase.stage1.spendSchedule.filter(r => foot.dataset.labels.split('|').includes(r.label));
+      foot.querySelectorAll('.cpx-ss-sub').forEach(td => {
+        const v = rows.reduce((a, r) => a + (r.v[td.dataset.key] || 0), 0);
+        td.textContent = v ? v.toLocaleString('en-US') : '—';
+      });
+      const tot = foot.querySelector('.cpx-ss-subtot');
+      if (tot) tot.textContent = rows.reduce((a, r) => a + ssRowTotalNum(r), 0).toLocaleString('en-US');
+    }
+
+    /* Stage 9 AR Tracker Budget 동기화 */
+    refreshTrackingStage();
   });
 }
 
@@ -864,9 +944,8 @@ function recalcCostEstimate() {
   if (!tbody) return;
   let curSum = 0, priorSum = 0;
   tbody.querySelectorAll(':scope > tr').forEach(tr => {
-    const input = tr.querySelector('.cpx-ce-cur');
-    const cur = parseMoneyNum(input?.value || '');
-    const prior = Number(input?.dataset.prior || 0);
+    const cur = parseMoneyNum(tr.querySelector('.cpx-ce-cur')?.value);
+    const prior = parseMoneyNum(tr.querySelector('.cpx-ce-prior')?.value);
     curSum += cur; priorSum += prior;
     const cell = tr.querySelector('.cpx-ce-rowtotal');
     if (cell) cell.textContent = (cur || prior) ? '$ ' + (cur + prior).toLocaleString('en-US') : '—';
@@ -879,11 +958,41 @@ function recalcCostEstimate() {
 function bindCostEstimate() {
   const tbody = document.getElementById('cpxCeBody');
   if (!tbody) return;
+
   tbody.addEventListener('input', (e) => {
-    if (!e.target.closest('.cpx-ce-cur')) return;
+    if (!e.target.closest('.cpx-ce-cur, .cpx-ce-prior')) return;
     recalcCostEstimate();
     refreshStage2Calc();  /* Total Investment = Cost Estimate 총액 → Stage 2 ROI 연동 */
   });
+
+  /* Description 퀵서치 선택 → 같은 행 Account 자동 채움 (M-ERP 마스터 페어) */
+  tbody.addEventListener('qs-select', (e) => {
+    const desc = e.target.closest('.cpx-ce-desc');
+    if (!desc) return;
+    const pair = ((window.CPX_MASTER || CPX_MASTER).finAccounts || []).find(f => f.desc === desc.value);
+    const acct = desc.closest('tr')?.querySelector('.cpx-ce-acct');
+    if (pair && acct) acct.value = pair.account || '';
+  });
+
+  /* 행 추가 — 빈 행 append(flipInX 등장) 후 그 행만 퀵서치/머니인풋 바인딩 */
+  document.getElementById('cpxCeAdd')?.addEventListener('click', () => {
+    tbody.insertAdjacentHTML('beforeend', ceRowHtml({}));
+    const tr = tbody.lastElementChild;
+    tr.classList.add('animate__animated', 'animate__flipInX');
+    bindQuickSearch(tr);
+    bindMoneyInputs(tr);
+    recalcCostEstimate();
+  });
+
+  /* 행 삭제 — hoo-x 위임. 합계·Stage 2 연동까지 갱신 */
+  tbody.addEventListener('click', (e) => {
+    const x = e.target.closest('.hoo-x');
+    if (!x) return;
+    x.closest('tr')?.remove();
+    recalcCostEstimate();
+    refreshStage2Calc();
+  });
+
   recalcCostEstimate();  /* 초기 합계 채움 */
 }
 
@@ -1154,8 +1263,9 @@ function ceInvestTotal() {
   const tbody = document.getElementById('cpxCeBody');
   if (!tbody) return parseMoneyNum(capexCase.stage1.estBudget);
   let sum = 0;
-  tbody.querySelectorAll('.cpx-ce-cur').forEach(input => {
-    sum += parseMoneyNum(input.value) + Number(input.dataset.prior || 0);
+  tbody.querySelectorAll(':scope > tr').forEach(tr => {
+    sum += parseMoneyNum(tr.querySelector('.cpx-ce-cur')?.value)
+         + parseMoneyNum(tr.querySelector('.cpx-ce-prior')?.value);
   });
   return sum;
 }
@@ -1505,6 +1615,8 @@ function bindDatepickers(root) {
         autoClose: true,
         container: document.body,
         yearRange: 6,
+        /* 선택 확정(닫힘) 시 change 디스패치 — Materialize 는 값만 바꾸고 이벤트를 안 쏨 (Schedule 동적 갱신용) */
+        onClose() { el.dispatchEvent(new Event('change', { bubbles: true })); },
       });
       /* 유리판 마우스 추적 색수차 — cpx-appr-step 어법 (transform 없음, spotlight 추적만) */
       const modal = inst && inst.modalEl;
@@ -2978,6 +3090,14 @@ function bindMoneyInputs(root) {
     input.value = formatMoney(input.value);
     sizeMoneyInput(input);
 
+    /* 빈값이면 $ 단위 숨김 (포커스 시엔 노출) — is-empty 를 필드에 토글 */
+    const unitToggle = () => {
+      const field = input.closest('.cpx-money-field');
+      if (field) field.classList.toggle('is-empty', !input.value);
+    };
+    unitToggle();
+    input.addEventListener('input', unitToggle);
+
     /* 영문/특수문자 차단 (컨트롤·내비게이션 키는 허용) */
     input.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -3082,7 +3202,11 @@ function bindQuickSearch(root) {
     list.forEach(v => { data[v] = null; });
 
     try {
-      M.Autocomplete.init(input, { data, minLength: 0, limit: 8 });
+      M.Autocomplete.init(input, {
+        data, minLength: 0, limit: 8,
+        /* 선택 확정 알림 — 페어 자동 채움(Cost Estimate Description→Account 등)에서 구독 */
+        onAutocomplete() { input.dispatchEvent(new CustomEvent('qs-select', { bubbles: true })); },
+      });
     } catch (e) {
       /* Materialize 1.0 element별 init 에러 방어 (NodeList toLowerCase 계열) */
       console.warn('[capex] autocomplete init 실패:', e);
@@ -3131,7 +3255,7 @@ function bindSelectChevron(root) {
 document.addEventListener('DOMContentLoaded', () => {
   applyTitleBar({
     badgeText: capexCase.classification,
-    idText:    capexCase.id,
+    idText:    capexCase.stage3.arNo,   /* 좌측 Project Summary 의 Project ID(WV26001)와 통일 (2026-07-09) */
     descText:  capexCase.title,
     lastModText: capexCase.lastMod,
   });
@@ -3173,11 +3297,11 @@ document.addEventListener('DOMContentLoaded', () => {
   bindQuickSearch();
 
   /* Stage 1 Sign-off Chain — 행 추가/삭제 (initial 행은 위 퀵서치/셀렉트가 처리) */
-  bindSignoffChain();
-
-  /* Stage 1 Category → 필수 서류 자동 매핑 + Cost Estimate 자동 합계 */
+  /* Stage 1 Category → 필수 서류 자동 매핑 + Cost Estimate 자동 합계 + Schedule 입력 연동 */
   bindCategoryDocs();
   bindCostEstimate();
+  bindSchedule();
+  bindSpendSchedule();
 
   /* Stage 6 AR Supplements — 행 추가/삭제 + 합계 */
   bindSupplements();
