@@ -449,16 +449,20 @@ function renderStageTracking() {
   const t = capexCase.tracking;
   const ss = capexCase.stage1.spendSchedule;
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  /* Budget = Stage 1 Spend Schedule 월합계 (단일 출처, 'YYYY-MM' 키 맵 — 트래커는 2026년 뷰) */
-  const b = months.map((_, i) => {
+  /* Budget = Stage 1 Spend Schedule 월합계 (단일 출처, 'YYYY-MM' 키 맵 — 트래커는 2026년 뷰).
+     ※ 전 수치는 월별 $K 반올림 후 합산 — TFT 참조 표기 방식(398+398 → TOTAL 2,521) */
+  const bK = months.map((_, i) => {
     const key = `2026-${String(i + 1).padStart(2, '0')}`;
-    return ss.reduce((a, r) => a + (r.v[key] || 0), 0) || null;
+    const v = ss.reduce((a, r) => a + (r.v[key] || 0), 0);
+    return v ? Math.round(v / 1000) : null;
   });
-  const k = v => v == null ? '—' : Math.round(v / 1000).toLocaleString('en-US');
+  const aK = t.actual.map(v => v != null ? Math.round(v / 1000) : null);
+  const fK = t.forecast.map(v => v != null ? Math.round(v / 1000) : null);
+  const k = v => v == null ? '—' : v.toLocaleString('en-US');
 
   let bSum = 0, aSum = 0, fSum = 0, ytdB = 0;
   const rows = months.map((m, i) => {
-    const bud = b[i], act = t.actual[i], fc = t.forecast[i];
+    const bud = bK[i], act = aK[i], fc = fK[i];
     bSum += bud || 0; aSum += act || 0;
     fSum += i < t.currentIdx ? (act || 0) : (fc || 0);   /* Full-year forecast = 확정 실적 + 예측 */
     if (i <= t.currentIdx) ytdB += bud || 0;
@@ -466,10 +470,10 @@ function renderStageTracking() {
     /* Variance = Budget − Actual(마감월) / Budget − Forecast(당월, est) */
     let vHtml = '—';
     if (i < t.currentIdx && act != null) {
-      const v = Math.round(((bud || 0) - act) / 1000);
+      const v = (bud || 0) - act;
       vHtml = `<span class="${v >= 0 ? 'cpx-res-good' : 'cpx-res-bad'}">${v >= 0 ? '+' : ''}${v}</span>`;
     } else if (i === t.currentIdx) {
-      const v = Math.round(((bud || 0) - (fc || 0)) / 1000);
+      const v = (bud || 0) - (fc || 0);
       vHtml = `<span class="cpx-res-part">${v >= 0 ? '+' : ''}${v} (est)</span>`;
     }
 
@@ -483,7 +487,7 @@ function renderStageTracking() {
     </tr>`;
   }).join('');
 
-  const fyVar = Math.round((bSum - fSum) / 1000);
+  const fyVar = bSum - fSum;
 
   return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>Monthly AR Tracker — ${capexCase.stage3.arNo} <small>($ thousand)</small></h5>
@@ -516,15 +520,15 @@ function renderStageTracking() {
     <div class="cpx-cmp-row">
       <div class="cpx-cmp-box is-warn">
         <div class="cpx-cmp-num">$ ${(t.actual[t.currentIdx] || 0).toLocaleString('en-US')}</div>
-        <div class="cpx-cmp-lbl">Current Month (Jul) — of $ ${(b[t.currentIdx] || 0).toLocaleString('en-US')} budget</div>
+        <div class="cpx-cmp-lbl">Current Month (Jul) — of $ ${((bK[t.currentIdx] || 0) * 1000).toLocaleString('en-US')} budget</div>
       </div>
       <div class="cpx-cmp-box is-actual">
-        <div class="cpx-cmp-num">$ ${aSum.toLocaleString('en-US')}</div>
-        <div class="cpx-cmp-lbl">Year-to-Date — of $ ${ytdB.toLocaleString('en-US')} YTD budget</div>
+        <div class="cpx-cmp-num">$ ${(aSum * 1000).toLocaleString('en-US')}</div>
+        <div class="cpx-cmp-lbl">Year-to-Date — of $ ${(ytdB * 1000).toLocaleString('en-US')} YTD budget</div>
       </div>
       <div class="cpx-cmp-box">
-        <div class="cpx-cmp-num">$ ${fSum.toLocaleString('en-US')}</div>
-        <div class="cpx-cmp-lbl">Full-Year Forecast — vs $ ${bSum.toLocaleString('en-US')} budget</div>
+        <div class="cpx-cmp-num">$ ${(fSum * 1000).toLocaleString('en-US')}</div>
+        <div class="cpx-cmp-lbl">Full-Year Forecast — vs $ ${(bSum * 1000).toLocaleString('en-US')} budget</div>
       </div>
     </div>`;
 }
@@ -642,6 +646,32 @@ function spendTablesHtml() {
   return table('Monthly Investment Spending Estimate ($)', ['Ext. Vendors', 'Cap. Labor'], 'Total Invest.')
        + table('Monthly AR Related Expense Estimate ($)', ['AR Expense'])
        + table('Monthly Capitalizable Engineering Estimate ($)', ['Cap Eng.']);
+}
+
+/* ── Stage 8 Budget 곡선 — 완전 파생: 기간=Schedule 스팬 / Plan=Spend Schedule 누적 / Actual=트래커 실적 누적 ── */
+function budgetCurveCfg() {
+  const months = schedMonthSpan();
+  const ss = capexCase.stage1.spendSchedule;
+  const t = capexCase.tracking;
+  let pcum = 0;
+  const plan = months.map(mo => {
+    pcum += ss.reduce((a, r) => a + (r.v[mo.key] || 0), 0);
+    return Math.round(pcum / 1000);
+  });
+  /* Actual — 트래커 월 실적($) 누적을 $K 로. currentIdx(당월)까지, 2026년 범위만 */
+  let acum = 0;
+  const actual = [];
+  for (const mo of months) {
+    const [y, m] = mo.key.split('-').map(Number);
+    if (y !== 2026 || m - 1 > t.currentIdx) break;
+    acum += t.actual[m - 1] || 0;
+    actual.push(Math.round(acum / 1000));
+  }
+  return { labels: months.map(mo => mo.label), plan, actual };
+}
+function refreshBudgetChart() {
+  if (typeof Highcharts === 'undefined') return;
+  if (document.getElementById('cpxChart-budget')) buildBudgetCurve('cpxChart-budget', budgetCurveCfg());
 }
 
 /* ── Stage 1 Schedule — 입력(시작/종료) → 타임라인·Duration 동적 갱신 ── */
@@ -900,6 +930,7 @@ function rebuildSpendTables() {
   wrap.innerHTML = spendTablesHtml();
   bindMoneyInputs(wrap);
   refreshTrackingStage();
+  refreshBudgetChart();   /* Stage 8 Budget 곡선 기간·Plan 도 재파생 */
 }
 function bindSpendSchedule() {
   const wrap = document.getElementById('cpxSpendWrap');
@@ -930,8 +961,9 @@ function bindSpendSchedule() {
       if (tot) tot.textContent = rows.reduce((a, r) => a + ssRowTotalNum(r), 0).toLocaleString('en-US');
     }
 
-    /* Stage 9 AR Tracker Budget 동기화 */
+    /* Stage 9 AR Tracker Budget + Stage 8 Budget 곡선 Plan 동기화 */
     refreshTrackingStage();
+    refreshBudgetChart();
   });
 }
 
@@ -1304,10 +1336,10 @@ function refreshStage2Calc() {
   const get = id => document.getElementById(id);
   if (!get('cpxRoi')) return;
   const c = calcStage2({
-    /* Savings/Revenue 는 카드 표시 전환(2026-07-09)으로 입력이 없음 — data 고정값. 입력이 다시 생기면 DOM 우선 */
+    /* 입력 3종은 ROI Calculation 표의 인풋 (없으면 data 폴백) — 카드는 전부 여기서 파생 */
     savings: get('cpxSavings') ? parseMoneyNum(get('cpxSavings').value) : capexCase.stage2.costSavings,
     revenue: get('cpxRevenue') ? parseMoneyNum(get('cpxRevenue').value) : capexCase.stage2.revenueImpact,
-    opCost:  capexCase.stage2.opCostIncrease, /* 원본에 입력 필드 없음 — mock 고정값 */
+    opCost:  get('cpxOpCost')  ? parseMoneyNum(get('cpxOpCost').value)  : capexCase.stage2.opCostIncrease,
     invest:  ceInvestTotal(),
     cogs:    capexCase.stage2.annualCogs,     /* CCC 는 read-only 불러온 데이터 — 고정값 */
     dio:     capexCase.stage2.dioReduction,   /* 표시 전용 — mock 고정값 */
@@ -1315,10 +1347,15 @@ function refreshStage2Calc() {
   const f = fmtStage2(c);
   get('cpxRoi').textContent           = f.roi;
   get('cpxAnnualBenefit').textContent = f.annualBenefit;
-  get('cpxOpCostView').textContent    = fmtUsd(c.opCost);
   get('cpxNetBenefit').textContent    = f.netBenefit;
   get('cpxTotalInv').textContent      = f.invest;
   get('cpxRoiBasis').textContent      = f.roi;
+
+  /* Key Financial Metrics 카드 — ROI Calculation 입력에서 파생 */
+  const savCard = get('cpxSavCard');
+  if (savCard) savCard.textContent = fmtUsd(c.savings);
+  const revCard = get('cpxRevCard');
+  if (revCard) revCard.textContent = fmtUsd(c.revenue);
   get('cpxPayback').textContent       = f.payback;
   get('cpxIrr').textContent           = f.irr;
   get('cpxNpv').textContent           = f.npv;
@@ -1340,7 +1377,7 @@ function refreshStage2Calc() {
 }
 
 function bindStage2Calc() {
-  ['cpxSavings', 'cpxRevenue'].forEach(id => {
+  ['cpxSavings', 'cpxRevenue', 'cpxOpCost'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', refreshStage2Calc);
   });
 }
@@ -1402,7 +1439,7 @@ function renderStage2() {
     <div class="cpx-ccc-grid">
       <div class="cpx-ccc-card cpx-ccc-uni is-good">
         <div class="cpx-ccc-top"><i class="material-icons">savings</i>Cost Savings Expected</div>
-        <div class="cpx-ccc-val">${fmtUsd(d.costSavings)}<span class="cpx-ccc-unit">/yr</span></div>
+        <div class="cpx-ccc-val"><span id="cpxSavCard">${fmtUsd(d.costSavings)}</span><span class="cpx-ccc-unit">/yr</span></div>
       </div>
       <div class="cpx-ccc-card cpx-ccc-uni">
         <div class="cpx-ccc-top"><i class="material-icons">speed</i>Productivity Gain</div>
@@ -1411,7 +1448,7 @@ function renderStage2() {
       </div>
       <div class="cpx-ccc-card cpx-ccc-uni is-warn">
         <div class="cpx-ccc-top"><i class="material-icons">trending_up</i>Revenue Impact</div>
-        <div class="cpx-ccc-val">${fmtUsd(d.revenueImpact)}<span class="cpx-ccc-unit">/yr</span></div>
+        <div class="cpx-ccc-val"><span id="cpxRevCard">${fmtUsd(d.revenueImpact)}</span><span class="cpx-ccc-unit">/yr</span></div>
       </div>
       <div class="cpx-ccc-card cpx-ccc-uni is-good">
         <div class="cpx-ccc-top"><i class="material-icons">percent</i>Expected ROI</div>
@@ -1420,7 +1457,7 @@ function renderStage2() {
     </div>
 
     <div class="bi-block-head">
-      <h5 class="bi-block-title"><span class="bi-bar"></span>ROI Calculation</h5>
+      <h5 class="bi-block-title"><span class="bi-bar"></span>ROI Calculation <small>— inputs drive the metric cards above</small></h5>
       <span class="cpx-ccc-src"><i class="material-icons">calculate</i>Auto-calculated</span>
     </div>
     <div class="hoo-spec-table">
@@ -1428,8 +1465,40 @@ function renderStage2() {
         <colgroup><col><col style="width:26%"></colgroup>
         <thead><tr><th class="hoo-th-key">Component</th><th class="hoo-th-num">Amount</th></tr></thead>
         <tbody>
+          <tr>
+            <td>Cost Savings (Expected) <span class="hoo-req">*</span></td>
+            <td class="hoo-num">
+              <div class="aniInput cpx-money-field">
+                <span class="cpx-money-unit">$</span>
+                <input type="text" id="cpxSavings" class="browser-default cpx-money" value="${d.costSavings.toLocaleString('en-US')}" inputmode="numeric">
+                <span class="cpx-money-suffix">/yr</span>
+                <span class="focus-border"></span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Revenue Impact <span class="hoo-req">*</span></td>
+            <td class="hoo-num">
+              <div class="aniInput cpx-money-field">
+                <span class="cpx-money-unit">$</span>
+                <input type="text" id="cpxRevenue" class="browser-default cpx-money" value="${d.revenueImpact.toLocaleString('en-US')}" inputmode="numeric">
+                <span class="cpx-money-suffix">/yr</span>
+                <span class="focus-border"></span>
+              </div>
+            </td>
+          </tr>
           <tr><td>Annual Benefit (Savings + Revenue)</td><td class="hoo-num" id="cpxAnnualBenefit">${f.annualBenefit}</td></tr>
-          <tr><td>(−) Operating Cost Increase</td><td class="hoo-num" id="cpxOpCostView">${fmtUsd(c.opCost)}</td></tr>
+          <tr>
+            <td>(−) Operating Cost Increase <span class="hoo-req">*</span></td>
+            <td class="hoo-num">
+              <div class="aniInput cpx-money-field">
+                <span class="cpx-money-unit">$</span>
+                <input type="text" id="cpxOpCost" class="browser-default cpx-money" value="${d.opCostIncrease.toLocaleString('en-US')}" inputmode="numeric">
+                <span class="cpx-money-suffix">/yr</span>
+                <span class="focus-border"></span>
+              </div>
+            </td>
+          </tr>
           <tr><td><b>Net Annual Benefit</b></td><td class="hoo-num" id="cpxNetBenefit">${f.netBenefit}</td></tr>
           <tr><td>Total Investment ${tip('From Stage 1 Cost Estimate (Current AR + Prior Approved)')}</td><td class="hoo-num" id="cpxTotalInv">${f.invest}</td></tr>
         </tbody>
@@ -2007,22 +2076,44 @@ function renderStage8() {
      입력 즉시 차트 반영 (calcStage2 실시간 연동 어법). 테이블은 hoo-table 양식 + aniInput 셀 (basis 표 어법) */
   const edCell = (series, v, i, isText) => `
     <td><div class="aniInput"><input type="text" class="browser-default${isText ? ' cpx-ed-text' : ''}"${isText ? '' : ' inputmode="numeric"'} data-series="${series}" data-i="${i}" value="${v}"><span class="focus-border"></span></div></td>`;
-  const editorHtml = (key, cfg) => `
+  const editorHtml = (key, cfg, unit = '%') => `
     <div class="cpx-chart-editor" data-chart-key="${key}">
       <div class="hoo-spec-table">
         <table class="hoo-table cpx-ed-table">
           <colgroup><col style="width:90px">${cfg.labels.map(() => '<col>').join('')}</colgroup>
           <thead><tr><th></th>${cfg.labels.map(l => `<th>${l}</th>`).join('')}</tr></thead>
           <tbody>
-            <tr><td class="cpx-ed-label">Plan (%)</td>${cfg.plan.map((v, i) => edCell('plan', v, i)).join('')}</tr>
-            <tr><td class="cpx-ed-label">Actual (%)</td>${cfg.actual.map((v, i) => edCell('actual', v, i)).join('')}</tr>
-            <tr><td class="cpx-ed-label">Event</td>${cfg.labels.map((_, i) => edCell('events', (cfg.events || [])[i] || '', i, true)).join('')}</tr>
+            <tr><td class="cpx-ed-label">Plan (${unit})</td>${cfg.labels.map((_, i) => edCell('plan', cfg.plan[i] != null ? cfg.plan[i] : '', i)).join('')}</tr>
+            <tr><td class="cpx-ed-label">Actual (${unit})</td>${cfg.labels.map((_, i) => edCell('actual', cfg.actual[i] != null ? cfg.actual[i] : '', i)).join('')}</tr>
+            ${cfg.events ? `<tr><td class="cpx-ed-label">Event</td>${cfg.labels.map((_, i) => edCell('events', (cfg.events || [])[i] || '', i, true)).join('')}</tr>` : ''}
           </tbody>
         </table>
       </div>
     </div>`;
 
   const editBtn = `<a href="javascript:;" class="cpx-chart-edit" title="Edit progress data"><i class="material-icons">edit</i><span class="cpx-chart-edit-lbl">Edit</span></a>`;
+
+  /* Budget 차트 에디터 — 월별 Actual($K) 입력. Plan 은 Spend Schedule 파생이라 편집 없음.
+     입력 시 트래커(capexCase.tracking.actual) 원본을 고쳐 차트+Stage 9 가 함께 갱신 */
+  const budgetEditorHtml = () => {
+    const months = schedMonthSpan();
+    return `
+    <div class="cpx-chart-editor" data-chart-key="budget">
+      <div class="hoo-spec-table">
+        <table class="hoo-table cpx-ed-table">
+          <colgroup><col style="width:110px">${months.map(() => '<col>').join('')}</colgroup>
+          <thead><tr><th></th>${months.map(mo => `<th>${mo.label}</th>`).join('')}</tr></thead>
+          <tbody>
+            <tr><td class="cpx-ed-label">Actual ($K/mo)</td>${months.map(mo => {
+              const [y, m] = mo.key.split('-').map(Number);
+              const v = y === 2026 ? capexCase.tracking.actual[m - 1] : null;
+              return `<td><div class="aniInput"><input type="text" class="browser-default" inputmode="numeric" data-series="tactual" data-key="${mo.key}" value="${v != null ? Math.round(v / 1000) : ''}"><span class="focus-border"></span></div></td>`;
+            }).join('')}</tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  };
 
   /* Milestone Timeline — 3색 dot (on-time sage / delayed danger / ahead blue) */
   const tlNote = { 'on-time': 'On time', delayed: '', ahead: '' };
@@ -2043,12 +2134,14 @@ function renderStage8() {
     <div class="cpx-charts-grid">
       <div class="cpx-chart-card">
         <div class="cpx-chart-head">
-          <span class="cpx-chart-title">Budget vs. Actual Spending</span>
+          <span class="cpx-chart-title">Budget vs. Actual Spending <small>${tip('Period & Plan from Stage 1 Schedule / Spend Schedule · Actual from AR Tracker')}</small></span>
           <span class="cpx-chart-head-r">
             <span class="cpx-chart-status t-success">✔ ${d.budgetCurve.status}</span>
+            ${editBtn}
           </span>
         </div>
         <div id="cpxChart-budget" class="cpx-chart-box"></div>
+        ${budgetEditorHtml()}
       </div>
       <div class="cpx-chart-card">
         <div class="cpx-chart-head">
@@ -2556,7 +2649,7 @@ function bindStage8Charts() {
 
   const charts = {};
   charts.overall = buildSCurve('cpxChart-overall', { ...d.overall, height: 260 });
-  buildBudgetCurve('cpxChart-budget', d.budgetCurve);
+  refreshBudgetChart();   /* Budget 곡선 = Schedule/Spend Schedule/트래커 완전 파생 */
 
   /* 진도 입력 에디터 — edit 토글 + 입력 즉시 차트 setData 반영 */
   document.querySelectorAll('.cpx-chart-card').forEach(card => {
@@ -2576,8 +2669,21 @@ function bindStage8Charts() {
       const inp = e.target.closest('input[data-series]');
       if (!inp) return;
       const key = editor.dataset.chartKey;
+
+      /* Budget 차트 — 월별 Actual($K) 입력 → 트래커 원본 갱신 → 차트·Stage 9 동기화 */
+      if (key === 'budget') {
+        if (inp.dataset.series !== 'tactual') return;
+        const [y, m] = inp.dataset.key.split('-').map(Number);
+        if (y !== 2026) return;   /* 트래커는 2026년 뷰 — 이후 연도는 프로토타입 범위 밖 */
+        capexCase.tracking.actual[m - 1] = inp.value.trim() === '' ? null : Math.max(0, parseMoneyNum(inp.value)) * 1000;
+        refreshBudgetChart();
+        refreshTrackingStage();
+        return;
+      }
+
       const cfg = key === 'overall' ? d.overall : null;
       if (!cfg || !charts[key]) return;
+
       if (inp.dataset.series === 'events') {
         if (!cfg.events) cfg.events = [];
         cfg.events[+inp.dataset.i] = inp.value.trim();

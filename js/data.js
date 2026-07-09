@@ -429,12 +429,10 @@ const capexCase = {
       events: ['Contract signed', 'P&ID review', 'Design freeze', 'Fab delay start', 'Max delay point', 'FAT passed', 'Site install begin', 'SAT passed', 'Go-Live'],
       status: 'Recovered',
     },
-    /* Budget vs. Actual Spending ($K 누적) — plan = Stage 1 Spend Schedule 월합계 누적,
-       actual = AR Tracker 실적 누적(7월 진행분까지) */
+    /* Budget vs. Actual Spending — 완전 파생 차트 (2026-07-09):
+       기간 = Stage 1 Schedule 스팬 / Plan = Spend Schedule 월합계 누적 / Actual = AR Tracker 실적 누적.
+       데이터는 status 뿐 — 수치는 budgetCurveCfg() 가 원천에서 계산 */
     budgetCurve: {
-      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-      plan:   [0, 5, 360, 758, 1155, 1510, 1813, 2041, 2268, 2445, 2520, 2520],
-      actual: [0, 3, 343, 753, 1138, 1500, 1620],
       status: 'Tracking to plan',
     },
     milestones: [
