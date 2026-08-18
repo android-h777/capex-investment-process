@@ -92,13 +92,19 @@ function renderRouting() {
   const sm = document.getElementById('cpxProjSummary');
   if (sm) {
     const c = capexCase;
-    sm.innerHTML = `<div class="rt-keys">` + [
-      { k: 'Project ID',   v: c.stage3.arNo, tone: 'hl' },
-      { k: 'Project Name', v: c.title },
-      { k: 'Site',         v: c.stage1.site.split(' (')[0] },
-      { k: 'Budget',       v: `$ ${c.stage1.estBudget}` },
-      { k: 'Status',       v: c.status === 'completed' ? 'Completed' : 'In Execution' },
-    ].map(keyLineHtml).join('') + `</div>`;
+    /* Supplement 행 — Stage 6 AR Supplements 와 연동 (#cpxSuppCount 를 bindSupplements 가 갱신)
+       Status — 섹션 타이틀과 동일한 mr-status 필 (Completed sage / In Execution baltic)
+       레이아웃 — Project ID 만 인라인, 나머지는 전부 라벨 좌 / 값 우측정렬 (rt-key-r, 참조 사이드바 어법) */
+    const stDone = c.status === 'completed';
+    const rRow = (k, vHtml) => `<div class="rt-key rt-key-r"><span class="rt-k">${k}</span>${vHtml}</div>`;
+    sm.innerHTML = `<div class="rt-keys">`
+    + rRow('Project ID', `<span class="rt-v rt-v-hl">${c.stage3.arNo}</span>`)
+    + rRow('Project',    `<span class="rt-v">${c.title}</span>`)
+    + rRow('Site',       `<span class="rt-v">${c.stage1.site.split(' (')[0]}</span>`)
+    + rRow('Budget',     `<span class="rt-v">$ ${c.stage1.estBudget}</span>`)
+    + rRow('Supplement', `<span class="rt-v" id="cpxSuppCount">$ 0</span>`)
+    + rRow('Status',     `<span class="mr-status mr-pill-sm ${stDone ? 'st-approved' : 'st-inprogress'}">${stDone ? 'Completed' : 'In Execution'}</span>`)
+    + `</div>`;
   }
 
   let html = '';
@@ -294,14 +300,37 @@ function renderStageGatekeeper() {
 
       <div class="form-group">
         <label>Decision</label>
-        <div class="bi-select-wrap">
-          <select class="bi-select browser-default">
-            <option value="">Select…</option>
-            <option ${d.decision === 'Advanced to AR' ? 'selected' : ''}>Advanced to AR</option>
-            <option ${d.decision === 'FPP — Hold with Notes' ? 'selected' : ''}>FPP — Hold with Notes</option>
-            <option ${d.decision === 'Rejected' ? 'selected' : ''}>Rejected</option>
-          </select>
-        </div>
+        <select>
+          <option value="" disabled>Select…</option>
+          <option ${d.decision === 'Advanced to AR' ? 'selected' : ''}>Advanced to AR</option>
+          <option ${d.decision === 'FPP — Hold with Notes' ? 'selected' : ''}>FPP — Hold with Notes</option>
+          <option ${d.decision === 'Rejected' ? 'selected' : ''}>Rejected</option>
+        </select>
+      </div>
+
+    </div>
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Gatekeeper Comments</h5>
+    <div class="form-grid">
+      <div class="form-group span-2">
+        <textarea class="browser-default detail-textarea" placeholder="Feedback, notes and conditions…">${d.notes}</textarea>
+      </div>
+    </div>
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Major Project Designation</h5>
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label>Major Project? ${tip('Major projects receive enhanced oversight, reporting and executive visibility')}</label>
+        <select>
+          <option ${d.majorProject === 'Yes' ? 'selected' : ''}>Yes</option>
+          <option ${d.majorProject === 'No' ? 'selected' : ''}>No</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Justification</label>
+        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">flag</i><span class="bi-readonly-text">Budget &gt; $ 1,000,000 — auto-flagged by system</span></div>
       </div>
 
     </div>
@@ -411,10 +440,9 @@ function bindSupplements() {
     });
     const total = document.getElementById('cpxSuppTotal');
     if (total) total.textContent = '$ ' + (base + suppSum).toLocaleString('en-US');
+    /* 사이드바 Supplement 행 — Budget 과 같은 $ 표기. 보충 있으면 건수 병기 */
     const count = document.getElementById('cpxSuppCount');
-    const note = document.getElementById('cpxSuppNote');
-    if (count) count.textContent = n;
-    if (note) note.textContent = n ? `+ $ ${suppSum.toLocaleString('en-US')} supplemental` : 'No supplement requested';
+    if (count) count.textContent = n ? `${n} · + $ ${suppSum.toLocaleString('en-US')}` : '$ 0';
   };
 
   addBtn.addEventListener('click', () => {
@@ -710,7 +738,7 @@ function renderStage1() {
       </div>
     </div>
 
-    <div class="form-grid col-3">
+    <div class="form-grid col-4">
 
       <div class="form-group">
         <label>Idea Number ${tip('Auto-generated per site (e.g. SVLL-0001, WTFD-0042)')}</label>
@@ -718,12 +746,11 @@ function renderStage1() {
       </div>
 
       <div class="form-group">
-        <label>Location</label>
-        <div class="aniInput cpx-qs-field input-field">
-          <input type="text" class="browser-default cpx-quicksearch" value="${d.site}" data-master="sites" placeholder="Quick search…" autocomplete="off">
-          <i class="material-icons cpx-qs-ico">search</i>
-          <span class="focus-border"></span>
-        </div>
+        <label>Location ${tip('Site or location of investment — 23 global locations master')}</label>
+        <select>
+          <option value="" disabled>Select…</option>
+          ${MD.sites.map(s => `<option ${s === d.site ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
       </div>
 
       <div class="form-group">
@@ -735,27 +762,28 @@ function renderStage1() {
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Cost Center ${tip('Manual entry — applicable cost center for this investment')}</label>
+        <div class="aniInput"><input type="text" class="browser-default" value="${d.costCenter}"><span class="focus-border"></span></div>
+      </div>
+
     </div>
 
     <div class="form-grid">
 
       <div class="form-group">
         <label>Category</label>
-        <div class="bi-select-wrap">
-          <select class="bi-select browser-default" id="cpxCategory">
-            <option value="">Select…</option>
-            ${MD.categories.map(cat => `<option ${cat === d.category ? 'selected' : ''}>${cat}</option>`).join('')}
-          </select>
-        </div>
+        <select id="cpxCategory">
+          <option value="" disabled>Select…</option>
+          ${MD.categories.map(cat => `<option ${cat === d.category ? 'selected' : ''}>${cat}</option>`).join('')}
+        </select>
       </div>
 
       <div class="form-group">
-        <label>Sub Category ${tip('Options depend on the selected Category')}</label>
-        <div class="bi-select-wrap">
-          <select class="bi-select browser-default" id="cpxSubCategory">
-            ${subCatOptionsHtml(d.category, d.subCategory)}
-          </select>
-        </div>
+        <label>Sub Category ${tip('5 defined sub-categories aligned to strategic pillars')}</label>
+        <select id="cpxSubCategory">
+          ${subCatOptionsHtml(d.category, d.subCategory)}
+        </select>
       </div>
 
       <div class="form-group span-2">
@@ -764,6 +792,37 @@ function renderStage1() {
       </div>
 
     </div>
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Requested Timing ${tip('Planning timeline — when the project needs to start and complete for capital planning')}</h5>
+    <div class="form-grid col-3">
+
+      <div class="form-group">
+        <label>Requested Start</label>
+        <select>
+          <option value="" disabled>Select…</option>
+          ${['2026 Q1', '2026 Q2', '2026 Q3', '2026 Q4', '2027 Q1', '2027 Q2'].map(q => `<option ${q === d.requestedStart ? 'selected' : ''}>${q}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Requested Completion</label>
+        <select>
+          <option value="" disabled>Select…</option>
+          ${['2026 Q3', '2026 Q4', '2027 Q1', '2027 Q2', '2027 Q3', '2027 Q4'].map(q => `<option ${q === d.requestedCompletion ? 'selected' : ''}>${q}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Planning Year</label>
+        <select>
+          ${['2026', '2027', '2028'].map(y => `<option ${y === d.planningYear ? 'selected' : ''}>${y}</option>`).join('')}
+        </select>
+      </div>
+
+    </div>
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Attachments</h5>
+    ${attachZoneHtml(d.attachments)}
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Category Metrics <small id="cpxCatDocsCat">— required documents for “${d.category}”</small></h5>
     <div class="hoo-spec-table">
@@ -774,11 +833,7 @@ function renderStage1() {
       </table>
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Schedule <small>— dates below drive the timeline</small></h5>
-    <div class="cpx-tl">
-      <div class="cpx-tl-line"></div>
-      <div class="cpx-tl-items" id="cpxSchedItems">${schedTlItemsHtml(d.schedule)}</div>
-    </div>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Schedule <small>— dates above drive the timeline below</small></h5>
     <div class="hoo-spec-table">
       <table class="hoo-table" id="cpxSchedTable">
         <colgroup><col style="width:30%"><col style="width:35%"><col style="width:35%"></colgroup>
@@ -786,12 +841,22 @@ function renderStage1() {
         <tbody id="cpxSchedBody">${schedInputRows}</tbody>
       </table>
     </div>
+    <div class="cpx-tl">
+      <div class="cpx-tl-line"></div>
+      <div class="cpx-tl-items" id="cpxSchedItems">${schedTlItemsHtml(d.schedule)}</div>
+    </div>
 
     <div class="bi-block-head">
       <h5 class="bi-block-title"><span class="bi-bar"></span>Cost Estimate <small>(Total = Current AR + Prior Approved · M-ERP Financial Master Data)</small></h5>
       <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hBlue waves-effect" id="cpxCeUpload"><i class="material-icons">upload_file</i><span class="label">Upload Estimate File</span></a>
+        <input type="file" id="cpxCeFile" accept=".xlsx,.xls" hidden>
         <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxCeAdd"><i class="material-icons">add</i><span class="label">Add row</span></a>
       </div>
+    </div>
+    <div class="cpx-fbox">
+      <span class="cpx-flabel">Excel Template</span>
+      <span class="cpx-fexpr">Upload the detailed cost estimate file (AR Example Cost Estimate tab) → the summary table below is <b>auto-populated</b></span>
     </div>
     <div class="hoo-spec-table cpx-signoff-table"><!-- cpx-signoff-table = 표 내부 퀵서치 스킨 + 드롭다운 overflow 해제 (Sign-off 와 동일 양식) -->
       <table class="hoo-table" id="cpxCeTable">
@@ -845,7 +910,7 @@ function catDocsRowsHtml(category) {
 function subCatOptionsHtml(category, selected) {
   const MD = window.CPX_MASTER || CPX_MASTER;
   const opts = MD.subCatByCategory[category] || MD.subCategories;
-  return ['<option value="">Select…</option>']
+  return ['<option value="" disabled>Select…</option>']
     .concat(opts.map(sc => `<option ${sc === selected ? 'selected' : ''}>${sc}</option>`))
     .join('');
 }
@@ -865,17 +930,22 @@ function bindCategoryDocs() {
     const cap = document.getElementById('cpxCatDocsCat');
     if (cap) cap.textContent = cat ? `— required documents for “${cat}”` : '— select a category';
 
-    /* ③ Sub Category 옵션을 카테고리에 맞게 재구성 (기존 선택이 유효하면 유지) */
+    /* ③ Sub Category 옵션을 카테고리에 맞게 재구성 (기존 선택이 유효하면 유지)
+       Materialize FormSelect 는 옵션 innerHTML 변경을 모름 — destroy 후 재-init (master-data 어법) */
     const sub = document.getElementById('cpxSubCategory');
     if (sub) {
       const keep = sub.value;
       sub.innerHTML = subCatOptionsHtml(cat, keep);
       if (sub.value !== keep) sub.value = '';
+      if (window.M && M.FormSelect) {
+        M.FormSelect.getInstance(sub)?.destroy();
+        M.FormSelect.init(sub);
+      }
     }
 
     /* ④ 피드백 토스트 */
     const n = ((window.CPX_MASTER || CPX_MASTER).categoryDocs[cat] || []).length;
-    if (window.M && cat) M.toast({ html: `${cat} — ${n} required document${n === 1 ? '' : 's'} · sub categories updated` });
+    if (window.M && cat) M.toast({ html: `${cat} — ${n} required document${n === 1 ? '' : 's'} populated` });
   });
 }
 
@@ -1350,6 +1420,8 @@ function refreshStage2Calc() {
   get('cpxNetBenefit').textContent    = f.netBenefit;
   get('cpxTotalInv').textContent      = f.invest;
   get('cpxRoiBasis').textContent      = f.roi;
+  const opCell = get('cpxS2OpCost');
+  if (opCell) opCell.textContent = fmtUsd(c.opCost);
 
   /* Key Financial Metrics 카드 — ROI Calculation 입력에서 파생 */
   const savCard = get('cpxSavCard');
@@ -1434,7 +1506,32 @@ function renderStage2() {
 
 
 
+  /* 금액 입력 필드 — ROI Calculation 표에서 분리한 사용자 입력 3종 (표는 참조처럼 auto-calc 전용) */
+  const moneyField = (id, val) => `
+      <div class="aniInput cpx-money-field">
+        <span class="cpx-money-unit">$</span>
+        <input type="text" id="${id}" class="browser-default cpx-money" value="${val.toLocaleString('en-US')}" inputmode="numeric">
+        <span class="cpx-money-suffix">/yr</span>
+        <span class="focus-border"></span>
+      </div>`;
+
   return `
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Financial Inputs <small>— all metrics below auto-calculate from these</small></h5>
+    <div class="form-grid col-3">
+      <div class="form-group">
+        <label>Cost Savings (Expected) <span class="hoo-req">*</span></label>
+        ${moneyField('cpxSavings', d.costSavings)}
+      </div>
+      <div class="form-group">
+        <label>Revenue Impact <span class="hoo-req">*</span></label>
+        ${moneyField('cpxRevenue', d.revenueImpact)}
+      </div>
+      <div class="form-group">
+        <label>Operating Cost Increase <span class="hoo-req">*</span></label>
+        ${moneyField('cpxOpCost', d.opCostIncrease)}
+      </div>
+    </div>
+
     <h5 class="bi-block-title"><span class="bi-bar"></span>Key Financial Metrics</h5>
     <div class="cpx-ccc-grid">
       <div class="cpx-ccc-card cpx-ccc-uni is-good">
@@ -1457,7 +1554,7 @@ function renderStage2() {
     </div>
 
     <div class="bi-block-head">
-      <h5 class="bi-block-title"><span class="bi-bar"></span>ROI Calculation <small>— inputs drive the metric cards above</small></h5>
+      <h5 class="bi-block-title"><span class="bi-bar"></span>ROI Calculation <small>— auto-calculates from the financial inputs above</small></h5>
       <span class="cpx-ccc-src"><i class="material-icons">calculate</i>Auto-calculated</span>
     </div>
     <div class="hoo-spec-table">
@@ -1465,40 +1562,8 @@ function renderStage2() {
         <colgroup><col><col style="width:26%"></colgroup>
         <thead><tr><th class="hoo-th-key">Component</th><th class="hoo-th-num">Amount</th></tr></thead>
         <tbody>
-          <tr>
-            <td>Cost Savings (Expected) <span class="hoo-req">*</span></td>
-            <td class="hoo-num">
-              <div class="aniInput cpx-money-field">
-                <span class="cpx-money-unit">$</span>
-                <input type="text" id="cpxSavings" class="browser-default cpx-money" value="${d.costSavings.toLocaleString('en-US')}" inputmode="numeric">
-                <span class="cpx-money-suffix">/yr</span>
-                <span class="focus-border"></span>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>Revenue Impact <span class="hoo-req">*</span></td>
-            <td class="hoo-num">
-              <div class="aniInput cpx-money-field">
-                <span class="cpx-money-unit">$</span>
-                <input type="text" id="cpxRevenue" class="browser-default cpx-money" value="${d.revenueImpact.toLocaleString('en-US')}" inputmode="numeric">
-                <span class="cpx-money-suffix">/yr</span>
-                <span class="focus-border"></span>
-              </div>
-            </td>
-          </tr>
           <tr><td>Annual Benefit (Savings + Revenue)</td><td class="hoo-num" id="cpxAnnualBenefit">${f.annualBenefit}</td></tr>
-          <tr>
-            <td>(−) Operating Cost Increase <span class="hoo-req">*</span></td>
-            <td class="hoo-num">
-              <div class="aniInput cpx-money-field">
-                <span class="cpx-money-unit">$</span>
-                <input type="text" id="cpxOpCost" class="browser-default cpx-money" value="${d.opCostIncrease.toLocaleString('en-US')}" inputmode="numeric">
-                <span class="cpx-money-suffix">/yr</span>
-                <span class="focus-border"></span>
-              </div>
-            </td>
-          </tr>
+          <tr><td>Operating Cost Increase</td><td class="hoo-num" id="cpxS2OpCost">${fmtUsd(d.opCostIncrease)}</td></tr>
           <tr><td><b>Net Annual Benefit</b></td><td class="hoo-num" id="cpxNetBenefit">${f.netBenefit}</td></tr>
           <tr><td>Total Investment ${tip('From Stage 1 Cost Estimate (Current AR + Prior Approved)')}</td><td class="hoo-num" id="cpxTotalInv">${f.invest}</td></tr>
         </tbody>
@@ -1535,24 +1600,17 @@ function renderStage2() {
 
       <div class="form-group">
         <label>Overall Assessment</label>
-        <div class="bi-select-wrap">
-          <select class="bi-select browser-default">
-            <option value="">Select…</option>
-            <option ${d.riskLevel === 'High' ? 'selected' : ''}>High Risk</option>
-            <option ${d.riskLevel === 'Medium' ? 'selected' : ''}>Medium Risk</option>
-            <option ${d.riskLevel === 'Low' ? 'selected' : ''}>Low Risk</option>
-          </select>
-        </div>
+        <select>
+          <option value="" disabled>Select…</option>
+          <option ${d.riskLevel === 'High' ? 'selected' : ''}>High Risk</option>
+          <option ${d.riskLevel === 'Medium' ? 'selected' : ''}>Medium Risk</option>
+          <option ${d.riskLevel === 'Low' ? 'selected' : ''}>Low Risk</option>
+        </select>
       </div>
 
       <div class="form-group">
         <label>Review Result</label>
         <div class="bi-readonly"><i class="material-icons bi-readonly-ico">check_circle</i><span class="bi-readonly-text">${d.reviewResult}</span></div>
-      </div>
-
-      <div class="form-group span-2">
-        <label>Risk Description</label>
-        <div class="aniInput"><input type="text" class="browser-default" value="${d.riskNote}"><span class="focus-border"></span></div>
       </div>
 
     </div>
@@ -1624,7 +1682,7 @@ function renderStage3() {
 
       <div class="form-group">
         <label>Approval Status</label>
-        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">check_circle</i><span class="bi-readonly-text">FULLY APPROVED — ${d.date}</span></div>
+        <div class="form-static"><span class="mr-status mr-pill-sm st-approved">Fully Approved — ${d.date}</span></div>
       </div>
 
     </div>
@@ -1715,6 +1773,49 @@ function bindStage3Grade() {
 }
 
 /* =================================================================
+ * Stage 3 — Utility Requirements 편집형 테이블 (Prototype V2.0)
+ *   복수 유틸리티/스펙 행 추가·삭제. Change Log 편집 테이블 어법 재사용
+ * ================================================================= */
+function cpxUtilRowHtml(u) {
+  const r = u || {};
+  return `
+    <tr>
+      <td><div class="aniInput"><input type="text" class="browser-default" value="${r.name || ''}" placeholder="Utility…"><span class="focus-border"></span></div></td>
+      <td><div class="aniInput"><input type="text" class="browser-default" value="${r.spec || ''}" placeholder="Specification…"><span class="focus-border"></span></div></td>
+      <td class="hoo-x"><i class="material-icons">close</i></td>
+    </tr>`;
+}
+function bindUtilities() {
+  const tbody = document.getElementById('cpxUtilBody');
+  const btn = document.getElementById('cpxUtilAdd');
+  if (!tbody || !btn) return;
+  btn.addEventListener('click', () => {
+    tbody.insertAdjacentHTML('beforeend', cpxUtilRowHtml({}));
+    tbody.lastElementChild.classList.add('animate__animated', 'animate__flipInX');
+  });
+  tbody.addEventListener('click', (e) => {
+    if (!e.target.closest('.hoo-x')) return;
+    e.target.closest('tr')?.remove();
+  });
+}
+
+/* =================================================================
+ * Stage 1 — Cost Estimate Excel 업로드 (Prototype V2.0)
+ *   상세 견적 엑셀 업로드 → 서머리 표 자동 반영 (프로토타입: 토스트 피드백)
+ * ================================================================= */
+function bindCeUpload() {
+  const btn = document.getElementById('cpxCeUpload');
+  const file = document.getElementById('cpxCeFile');
+  if (!btn || !file) return;
+  btn.addEventListener('click', () => file.click());
+  file.addEventListener('change', () => {
+    if (!file.files.length) return;
+    if (window.M) M.toast({ html: `${file.files[0].name} parsed — cost estimate summary auto-populated` });
+    file.value = '';
+  });
+}
+
+/* =================================================================
  * Stage 4 — Requirement & Specification (full implementation)
  *   PDF p.6: 기술사양/품질EHS/유틸리티 (text) 입력 3종
  *           Installed Base Review — CMMS 연동(auto):
@@ -1745,7 +1846,6 @@ function renderStage4() {
     <h5 class="bi-block-title"><span class="bi-bar"></span>Engineering Specification</h5>
     <div class="form-grid">
       <div class="form-group span-2">
-        <label>Equipment Specification</label>
         <textarea class="browser-default detail-textarea" placeholder="Enter the equipment specification…">${d.engSpec}</textarea>
       </div>
     </div>
@@ -1753,21 +1853,26 @@ function renderStage4() {
     <h5 class="bi-block-title"><span class="bi-bar"></span>Quality / EHS Requirements</h5>
     <div class="form-grid">
       <div class="form-group span-2">
-        <label>Standards &amp; Certifications</label>
         <textarea class="browser-default detail-textarea" placeholder="Enter EHS / quality standards…">${d.quality}</textarea>
       </div>
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Utility Requirements</h5>
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Utility Requirements ${tip('Validated against site capacity before procurement — add as many as needed')}</h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxUtilAdd"><i class="material-icons">add</i><span class="label">Add Utility Requirement</span></a>
+      </div>
+    </div>
     <div class="hoo-spec-table">
       <table class="hoo-table">
-        <colgroup><col style="width:26%"><col></colgroup>
-        <thead><tr><th class="hoo-th-key">Utility</th><th>Specification</th></tr></thead>
-        <tbody>
-          ${d.utilities.map(u => `<tr><td>${u.name}</td><td>${u.spec}</td></tr>`).join('')}
-        </tbody>
+        <colgroup><col style="width:26%"><col><col style="width:44px"></colgroup>
+        <thead><tr><th class="hoo-th-key">Utility</th><th>Specification</th><th></th></tr></thead>
+        <tbody id="cpxUtilBody">${d.utilities.map(cpxUtilRowHtml).join('')}</tbody>
       </table>
     </div>
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Specification Documents <small>— EHS risk assessment, engineering specs, P&amp;IDs</small></h5>
+    ${attachZoneHtml(d.specDocs)}
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Installed Base Review <small>(from CMMS)</small></h5>
     <div class="form-grid">
@@ -1883,7 +1988,7 @@ function renderStage5() {
 /* Budget Savings = 승인 예산 − 협상 확정가 (TFT: "Budget Savings: $520,000 (18.6%)") */
 function cbeSavingsText(winner) {
   const approved = parseMoneyNum(capexCase.stage3.approvedAmount);
-  const negotiated = parseMoneyNum(winner.negotiated);
+  const negotiated = parseUsdC(winner.negotiated);   /* '$ 2,280K' — K/M 접미사 파싱 (parseMoneyNum 은 K 를 버려 오계산) */
   const save = approved - negotiated;
   const rate = approved > 0 ? (save / approved * 100).toFixed(1) : 0;
   return `$ ${save.toLocaleString('en-US')} (${rate}% vs approved budget)`;
@@ -2062,6 +2167,14 @@ function renderStage7() {
 function renderStage8() {
   const d = capexCase.stage8;
 
+  /* Cost Drill-Down 합계 — Budget Availability Check 배너와 tfoot 공용 */
+  const ddTot = d.drillDown.reduce((a, r) => ({
+    budget:    a.budget    + (r.budget    || 0),
+    actuals:   a.actuals   + (r.actuals   || 0),
+    committed: a.committed + (r.committed || 0),
+    available: a.available + (r.available || 0),
+  }), { budget: 0, actuals: 0, committed: 0, available: 0 });
+
   /* 공용 범례 — Plan / Actual / 지연·선행 영역 (HTML 범례, 차트 내 legend 비활성) */
   const legend = `
     <div class="cpx-chart-legend">
@@ -2186,6 +2299,40 @@ function renderStage8() {
       </div>
     </div>
 
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Budget Availability Check ${tip('System blocks PO/WO creation when the available budget is insufficient')}</h5>
+    <div class="form-grid">
+      <div class="form-group span-2">
+        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">check_circle</i><span class="bi-readonly-text">Budget Available — PO/WO creation permitted · Available ${ceFmt(ddTot.available)} &nbsp;|&nbsp; Committed ${ceFmt(ddTot.committed)} &nbsp;|&nbsp; Budget ${ceFmt(ddTot.budget)}</span></div>
+      </div>
+    </div>
+
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Cost Drill-Down <small>— by WOs, POs, CapEng (all costs drillable)</small></h5>
+    <div class="hoo-spec-table">
+      <table class="hoo-table">
+        <colgroup><col style="width:24%"><col style="width:19%"><col style="width:19%"><col style="width:19%"><col style="width:19%"></colgroup>
+        <thead><tr><th class="hoo-th-key">Cost Element</th><th class="hoo-th-num">Budget</th><th class="hoo-th-num">Actuals</th><th class="hoo-th-num">Committed</th><th class="hoo-th-num">Available</th></tr></thead>
+        <tbody>
+          ${d.drillDown.map(r => `
+          <tr>
+            <td>${r.el}</td>
+            <td class="hoo-num">${ceFmt(r.budget)}</td>
+            <td class="hoo-num">${ceFmt(r.actuals)}</td>
+            <td class="hoo-num">${ceFmt(r.committed)}</td>
+            <td class="hoo-num">${ceFmt(r.available)}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td class="hoo-tfoot-label">TOTAL</td>
+            <td class="hoo-num hoo-tfoot-value">${ceFmt(ddTot.budget)}</td>
+            <td class="hoo-num hoo-tfoot-value">${ceFmt(ddTot.actuals)}</td>
+            <td class="hoo-num hoo-tfoot-value">${ceFmt(ddTot.committed)}</td>
+            <td class="hoo-num hoo-tfoot-value">${ceFmt(ddTot.available)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
     <div class="bi-block-head">
       <h5 class="bi-block-title"><span class="bi-bar"></span>Purchasing</h5>
       <div class="bi-block-meta">
@@ -2209,8 +2356,56 @@ function renderStage8() {
       </table>
     </div>
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Fixed Assets</h5>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Retired Assets ${tip('Old equipment replaced or decommissioned by this project')}</h5>
+    <div class="hoo-spec-table">
+      <table class="hoo-table">
+        <colgroup><col style="width:18%"><col><col style="width:14%"><col style="width:16%"><col style="width:13%"></colgroup>
+        <thead><tr><th class="hoo-th-key">Asset ID</th><th>Description</th><th class="hoo-th-num">Book Value</th><th>Retirement Date</th><th>Status</th></tr></thead>
+        <tbody>
+          ${d.retiredAssets.map(a => `
+          <tr>
+            <td>${a.id}</td>
+            <td>${a.desc}</td>
+            <td class="hoo-num">${a.book}</td>
+            <td class="hoo-date">${a.date}</td>
+            <td><span class="cpx-res-part">${a.status}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Fixed Assets ${tip('Transfer request is routed to Finance for validation')}</h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxFaTransfer"><i class="material-icons">drive_file_move</i><span class="label">Request Budget Transfer</span></a>
+      </div>
+    </div>
     <div class="cpx-appr-chain">${flowChainHtml(d.fixedAsset)}</div>
+
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Project Closure Document <small>— auto-populated from asset listing &amp; final cost data</small></h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hBlue waves-effect" id="cpxClosureGen"><i class="material-icons">description</i><span class="label">Generate Closure Document</span></a>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Total Assets Created</label>
+        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">precision_manufacturing</i><span class="bi-readonly-text">${d.closure.created}</span></div>
+      </div>
+      <div class="form-group">
+        <label>Total Assets Retired</label>
+        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">auto_delete</i><span class="bi-readonly-text">${d.closure.retired}</span></div>
+      </div>
+      <div class="form-group">
+        <label>Final Project Cost</label>
+        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">paid</i><span class="bi-readonly-text">${d.closure.finalCost}</span></div>
+      </div>
+      <div class="form-group">
+        <label>Budget Variance</label>
+        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">trending_down</i><span class="bi-readonly-text">${d.closure.variance}</span></div>
+      </div>
+    </div>
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Maintenance Module</h5>
     <div class="cpx-appr-chain">${flowChainHtml(d.maintenance)}</div>
@@ -2303,7 +2498,7 @@ function buildSummaryHtml() {
   const varRate    = approved > 0 ? Math.abs(variance / approved * 100) : 0;
   const under      = variance >= 0;
 
-  const roiRow = c.stage10.roiCompare.find(r => r.label === 'ROI (%)');
+  const roiRow = c.stage10.roiCompare.find(r => r.label === 'ROI');
   const pbRow  = c.stage10.roiCompare.find(r => r.label === 'Payback Period');
   const npvRow = c.stage10.roiCompare.find(r => r.label === 'NPV');
   const tbeW   = c.stage5.vendors.find(v => v.winner);
@@ -2324,13 +2519,17 @@ function buildSummaryHtml() {
     </div>`).join('');
 
   const jd = stage2Judge(s2);
+  /* Supplement 현황 — Stage 6 표의 UI 상태(추가된 행)에서 집계 (사이드바 Supplement 행과 동일 소스) */
+  let suppN = 0, suppSum = 0;
+  document.querySelectorAll('#cpxSuppBody .cpx-supp-amt').forEach(el => { suppN++; suppSum += parseMoneyNum(el.value); });
+  const suppTxt = suppN ? `${suppN} supplement${suppN > 1 ? 's' : ''} · + $ ${suppSum.toLocaleString('en-US')}` : 'no supplement';
   const phases = [
     ['1',  'Idea Registration',          `${c.stage1.ideaNo} · ${c.stage1.category} / ${c.stage1.subCategory} · ${c.stage1.requester} · $ ${c.stage1.estBudget} estimate`],
     ['2',  'Feasibility &amp; ROI',      `Expected ROI ${s2.roi.toFixed(1)}%, payback ${pbExp} · system judgment ${jd.level} risk`],
     ['3',  'Requirement &amp; Spec',     `Ref. ${c.stage4.referenceEquip.split(' ')[0]} · CMMS history reviewed → reflected in new spec`],
     ['4',  'Gatekeeper Review',          `${c.gatekeeper.decision} · ${c.gatekeeper.name.split(' — ')[0]} · PM ${c.gatekeeper.assignedPm} assigned`],
     ['5',  'AR Approval',                `AR ${c.stage3.arNo} fully approved · DOA chain to ${c.stage3.approvalChain.slice(-1)[0].role} (${c.stage3.date})`],
-    ['6',  'Approved Budget',            `${c.stage3.approvedAmount} set from cost estimate · no supplement`],
+    ['6',  'Approved Budget',            `${c.stage3.approvedAmount} set from cost estimate · ${suppTxt}`],
     ['7',  'TBE / CBE',                  `${tbeW.name} preferred (${tbeW.score}) · selected at ${cbeW.negotiated} (from ${cbeW.quoted})`],
     ['8',  'Project Execution',          `Overall ${c.stage8.overall.status} · ${c.stage8.budgetVsActual.committedPct} · Go-Live ${goLive.date}`],
     ['9',  'AR Tracking &amp; Forecast', `YTD $ 1.62M actual vs $ 1.81M budget · full-year forecast $ 2.53M`],
@@ -2518,16 +2717,18 @@ function scurveActualPoints(cfg) {
     const ev = (cfg.events || [])[i];
     const dev = v - cfg.plan[i];
     /* 라벨 상/하 — 기본은 원본 배치(지연 = 점 아래), 단 겹침 회피 보정:
-       바닥 근처(≤10%)는 위로(x축 라벨 충돌), 천장 근처(≥95%)는 아래로(플롯 상단 클리핑) */
+       바닥 근처(≤10%)는 위로(x축 라벨 충돌), 천장 근처(≥95%)는 아래로(플롯 상단 클리핑).
+       이웃 포인트가 같은 면에 연속될 때는 인덱스 패리티 지그재그(9px)로 세로 분리 (2026-08-18) */
     let above = dev >= 0;
     if (v <= 10) above = true;
     if (v >= 95) above = false;
+    const stagger = (i % 2) * 9;
     const labels = [];
     if (ev) {
       labels.push({
         enabled: true,
         format: ev,
-        y: above ? -6 : 18,
+        y: above ? -6 - stagger : 18 + stagger,
         verticalAlign: above ? 'bottom' : 'top',
         /* 가장자리 포인트 — 차트 밖으로 안 나가게 안쪽으로 펼침 */
         align: i === 0 ? 'left' : i === last ? 'right' : 'center',
@@ -2537,10 +2738,14 @@ function scurveActualPoints(cfg) {
     }
     if (Math.abs(dev) >= CPX_DELAY_MIN) {
       const behind = dev < 0;
+      /* 편차 필 — 점 우측 배치는 다음 포인트의 이벤트 라벨과 충돌 (2026-08-18 발견)
+         → 이벤트 라벨 반대 면에 점 중앙 정렬. 지연 구간에선 Plan-Actual 갭 안에 들어감 */
       labels.push({
         enabled: true,
         format: `${dev > 0 ? '+' : ''}${dev}%`,
-        align: 'left', x: 10, verticalAlign: 'middle', y: 0, /* 점 우측 — 이벤트 라벨(상/하)과 충돌 회피 */
+        align: 'center', x: 0,
+        verticalAlign: above ? 'top' : 'bottom',
+        y: above ? 16 : -8,
         crop: false, overflow: 'allow', allowOverlap: true,
         /* 지연 숫자는 viva magenta(--c-danger #BB2649) — terracotta(Gap Area 면적색)보다 강한 경고
            배경 필 대신 흰 테두리 텍스트 — 이벤트 라벨과 같은 어법 (2026-06-05) */
@@ -2744,10 +2949,22 @@ function bindStage10Charts() {
   });
 }
 
-/* Stage 10 — 필터/내보내기 버튼 (프로토타입: 토스트 피드백) */
+/* Stage 8 — Budget Transfer / Closure Document 버튼 (프로토타입: 토스트 피드백) */
+function bindStage8Extras() {
+  document.getElementById('cpxFaTransfer')?.addEventListener('click', () => {
+    if (window.M) M.toast({ html: 'Budget transfer request sent — routed to Finance for validation' });
+  });
+  document.getElementById('cpxClosureGen')?.addEventListener('click', () => {
+    if (window.M) M.toast({ html: `Closure document generated — Closure_${capexCase.stage3.arNo}.pdf` });
+  });
+}
+
+/* Stage 10 — 필터 즉시 적용(셀렉트 change 위임) + 내보내기 버튼 (프로토타입: 토스트 피드백) */
 function bindStage10Report() {
-  document.getElementById('cpxRpApply')?.addEventListener('click', () => {
-    if (window.M) M.toast({ html: 'Filters applied — 7 active projects (Waterford · 2026)' });
+  document.getElementById('cpxRpFilters')?.addEventListener('change', (e) => {
+    const sel = e.target.closest('select');
+    if (!sel) return;
+    if (window.M) M.toast({ html: `Filter applied — ${sel.value} · 7 active projects` });
   });
   document.getElementById('cpxRpExport')?.addEventListener('click', () => {
     if (window.M) M.toast({ html: 'Report exported — CAPEX_Report_WTFD_2026.xlsx' });
@@ -2833,23 +3050,15 @@ function parseUsdC(s) {
 const fmtPct = (x) => `${x >= 0 ? '+' : ''}${x.toFixed(1)}%`;
 
 /* Stage 10 산식 밴드 expr — render 와 refreshStage10Expected 가 공유 (drift 방지).
-   Expected 측 값은 calcStage2 연동이라 Stage 2 입력 변경 시 live 갱신 대상 */
+   Expected 측 값은 calcStage2 연동이라 Stage 2 입력 변경 시 live 갱신 대상.
+   구성·표기는 참조(Rv2.0) Calculation 박스 정합 — 풀 자릿수 (2026-08-18) */
 function s10FbExpr(c, d) {
   const d2 = capexCase.stage2;
-  const savA = parseUsdC(d.savings.actual);
-  const revA = parseUsdC(d.revenue.actual);
-  const savPct = c.savings > 0 ? (savA - c.savings) / c.savings * 100 : 0;
-  const revPct = c.revenue > 0 ? (revA - c.revenue) / c.revenue * 100 : 0;
-  const pb = c.payback != null ? `${c.payback.toFixed(1)} yr` : '—';
+  const pb = c.payback != null ? `${c.payback.toFixed(1)} yrs` : '—';
   return {
-    sav: `= (Actual − Expected) ÷ Expected × 100 = (${d.savings.actual} − ${fmtUsdAuto(c.savings)}) ÷ ${fmtUsdAuto(c.savings)} × 100 = <b>${fmtPct(savPct)}</b>`,
-    rev: `= (Actual − Expected) ÷ Expected × 100 = (${d.revenue.actual} − ${fmtUsdAuto(c.revenue)}) ÷ ${fmtUsdAuto(c.revenue)} × 100 = <b>${fmtPct(revPct)}</b>`,
-    nbE: `= ① + ② − ③ = ${fmtUsdK(c.savings)} + ${fmtUsdK(c.revenue)} − ${fmtUsdK(c.opCost)} = <b>${fmtUsdK(c.netBenefit)}</b>`,
-    /* ROI / CCC Expected — calc 연동 */
-    roiE:     `= Net Benefit ÷ Investment × 100 = ${fmtUsdK(c.netBenefit)} ÷ ${fmtUsdK(c.invest)} × 100 = <b>${c.roi.toFixed(1)}%</b>`,
-    paybackE: `= Investment ÷ Net Benefit = ${fmtUsdK(c.invest)} ÷ ${fmtUsdK(c.netBenefit)} = <b>${pb}</b>`,
-    npvE:     `= Σ (Net Benefit ÷ (1 + 0.1)ⁿ) − Investment ≈ <b>${fmtUsdK(c.npv)}</b>  (r = 10%, n = 5yr)`,
-    wcE:      `= Daily COGS × DIO Reduction = (${fmtUsdAuto(c.cogs)} ÷ 365) × ${d2.dioReduction.toFixed(1)} days ≈ <b>${fmtUsdK(c.wcSavings)}</b>`,
+    roiE:     `= Net Annual Benefit ÷ Total Investment × 100 = ${fmtUsd(c.netBenefit)} ÷ ${fmtUsd(c.invest)} × 100 = <b>${c.roi.toFixed(1)}%</b>`,
+    paybackE: `= Total Investment ÷ Net Annual Benefit = ${fmtUsd(c.invest)} ÷ ${fmtUsd(c.netBenefit)} = <b>${pb}</b>`,
+    wcE:      `= Daily COGS × DIO Reduction = (${fmtUsd(c.cogs)} ÷ 365) × ${d2.dioReduction.toFixed(1)} = <b>${fmtUsd(Math.round(c.wcSavings / 1000) * 1000)}/yr</b>`,
   };
 }
 
@@ -2884,25 +3093,24 @@ function renderStage10() {
     <div class="cpx-fbox">
       ${rows.map(r => `<span class="cpx-flabel">${r[0]}</span><span class="cpx-fexpr"${r[2] ? ` id="${r[2]}"` : ''}>${r[1]}</span>`).join('')}
     </div>`;
-  const nbA = d.netBenefit.map(r => r.actual);  /* [savings, revenue, opCost, total] actual */
+  const nbTotalActual = d.netBenefit[3].actual;   /* '$ 1,392,000' — 산식 밴드 Actual 라인용 */
 
-  /* ---- Net Benefit 표 — Expected ← calc (①savings ②revenue ③opCost, 합계 netBenefit) ---- */
-  const nbExpected = [fmtUsdK(c.savings), fmtUsdK(c.revenue), fmtUsdK(c.opCost), fmtUsdK(c.netBenefit)];
+  /* ---- Net Benefit 표 — Expected ← calc. 참조 정합: 풀 자릿수, OpCost 는 괄호 표기 ---- */
+  const nbExpected = [fmtUsd(c.savings), fmtUsd(c.revenue), `(${fmtUsd(c.opCost)})`, fmtUsd(c.netBenefit)];
   const nbRows = d.netBenefit.map((r, i) => `
     <tr${r.total ? ' class="cpx-row-main cpx-result-row"' : ''}>
       <td>${r.label}</td>
       <td class="hoo-num" id="cpxS10NbE${i}">${nbExpected[i]}</td>
-      <td class="hoo-num cpx-s10-actual">${r.actual}</td>
+      <td class="hoo-num cpx-s10-actual">${i === 2 ? `(${r.actual})` : r.actual}</td>
     </tr>`).join('');
 
-  /* ---- ROI 표 — Expected ← calc (Formula 컬럼은 원본 그대로) ---- */
-  const roiExpected = [f.roi, c.payback != null ? `${c.payback.toFixed(1)} yr` : '—', f.irr, fmtUsdK(c.npv)];
+  /* ---- ROI 표 — Expected ← calc. 참조 정합: Formula 컬럼 제거, 풀 자릿수 ---- */
+  const roiExpected = [f.roi, c.payback != null ? `${c.payback.toFixed(1)} yrs` : '—', f.irr, f.npv];
   const roiRows = d.roiCompare.map((r, i) => `
     <tr>
       <td>${r.label}</td>
       <td class="hoo-num" id="cpxS10RoiE${i}">${roiExpected[i]}</td>
       <td class="hoo-num cpx-s10-actual">${r.actual}</td>
-      <td class="cpx-formula-cell">${r.formula}</td>
     </tr>`).join('');
 
   /* ---- CCC — TFT 참조: Expected/Actual 카드 2×2 (표 → 카드 전환, LeadTime 제외 2026-07-09) ---- */
@@ -2927,26 +3135,24 @@ function renderStage10() {
   const rpSelect = (label, opts) => `
       <div class="form-group">
         <label>${label}</label>
-        <div class="bi-select-wrap">
-          <select class="bi-select browser-default">
-            ${opts.map((o, i) => `<option ${i === 0 ? 'selected' : ''}>${o}</option>`).join('')}
-          </select>
-        </div>
+        <select>
+          ${opts.map((o, i) => `<option ${i === 0 ? 'selected' : ''}>${o}</option>`).join('')}
+        </select>
       </div>`;
 
   return `
     <div class="bi-block-head">
-      <h5 class="bi-block-title"><span class="bi-bar"></span>Site Roll-up Report</h5>
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Site Roll-up Report <small>— filters apply instantly</small></h5>
       <div class="bi-block-meta">
-        <a href="javascript:;" class="hBtn hBtn-sm hBlue waves-effect" id="cpxRpApply"><i class="material-icons">filter_alt</i><span class="label">Apply Filters</span></a>
         <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxRpExport"><i class="material-icons">download</i><span class="label">Export Report</span></a>
       </div>
     </div>
-    <div class="form-grid col-4">
+    <div class="form-grid col-5" id="cpxRpFilters">
       ${rpSelect('Site', ['Waterford (WTFD)', 'Sistersville (SVLL)', 'All Sites'])}
       ${rpSelect('Year', ['2026', '2025', 'All Years'])}
       ${rpSelect('Quarter', ['All Quarters', 'Q1', 'Q2', 'Q3', 'Q4'])}
-      ${rpSelect('Category', ['All Categories', 'Growth', 'EHS', 'Infrastructure', 'Technology', 'Productivity', 'Maintenance'])}
+      ${rpSelect('Category', ['All Categories'].concat((window.CPX_MASTER || CPX_MASTER).categories))}
+      ${rpSelect('Sub-Category', ['All Sub-Categories'].concat((window.CPX_MASTER || CPX_MASTER).subCategories))}
     </div>
 
     <div class="cpx-ccc-grid">
@@ -2996,15 +3202,15 @@ function renderStage10() {
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Budget vs Actual</h5>
     <div class="cpx-cmp-row">
-      ${cmpBox(fmtUsdAuto(approved), 'Approved Budget', '', 'cpxS10BudA')}
-      ${cmpBox(d.budget.actual, 'Actual Cost', 'is-actual')}
-      ${cmpBox(`${under ? '−' : '+'} ${fmtUsdAuto(Math.abs(variance))}`,
+      ${cmpBox(fmtUsd(approved), 'Approved Budget', '', 'cpxS10BudA')}
+      ${cmpBox(fmtUsd(actualCost), 'Actual Cost', 'is-actual')}
+      ${cmpBox(`${under ? '−' : '+'} ${fmtUsd(Math.abs(variance))}`,
                `${under ? 'Under' : 'Over'} Budget (${Math.abs(varRate).toFixed(1)}%)`,
                `is-delta ${under ? 'pos' : 'neg'}`, 'cpxS10BudD')}
     </div>
     ${fbox([
-      ['Budget Variance', `= Approved Budget − Actual Cost = ${fmtUsdAuto(approved)} − ${d.budget.actual} = <b>${fmtUsdAuto(Math.abs(variance))}</b>`],
-      ['Variance Rate (%)', `= Variance ÷ Approved Budget × 100 = ${fmtUsdAuto(Math.abs(variance))} ÷ ${fmtUsdAuto(approved)} × 100 = <b>${Math.abs(varRate).toFixed(1)}%</b>`],
+      ['Budget Variance', `= Approved Budget − Actual Cost = ${fmtUsd(approved)} − ${fmtUsd(actualCost)} = <b>${fmtUsd(Math.abs(variance))}</b>`],
+      ['Variance Rate (%)', `= Variance ÷ Approved Budget × 100 = ${fmtUsd(Math.abs(variance))} ÷ ${fmtUsd(approved)} × 100 = <b>${Math.abs(varRate).toFixed(1)}%</b>`],
     ])}
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>Performance <small>(6-Month Review — ${d.reviewDate})</small></h5>
@@ -3015,38 +3221,36 @@ function renderStage10() {
         <tbody>
           <tr>
             <td>Cost Savings (annualized)</td>
-            <td class="hoo-num" id="cpxS10SavE">${fmtUsdAuto(c.savings)}</td>
+            <td class="hoo-num" id="cpxS10SavE">${fmtUsd(c.savings)}</td>
             <td class="hoo-num cpx-s10-actual">${d.savings.actual}</td>
             <td class="hoo-num"><span class="${savPct >= 0 ? 'cpx-res-good' : 'cpx-res-bad'}" id="cpxS10SavPct">${fmtPct(savPct)}</span></td>
           </tr>
           <tr>
             <td>Revenue Impact (annualized)</td>
-            <td class="hoo-num" id="cpxS10RevE">${fmtUsdAuto(c.revenue)}</td>
+            <td class="hoo-num" id="cpxS10RevE">${fmtUsd(c.revenue)}</td>
             <td class="hoo-num cpx-s10-actual">${d.revenue.actual}</td>
             <td class="hoo-num"><span class="${revPct >= 0 ? 'cpx-res-good' : 'cpx-res-bad'}" id="cpxS10RevPct">${fmtPct(revPct)}</span></td>
           </tr>
         </tbody>
       </table>
     </div>
-    ${fbox([
-      ['Savings Exceeded (%)', fb.sav, 'cpxS10FbSav'],
-      ['Revenue Exceeded (%)', fb.rev, 'cpxS10FbRev'],
-    ])}
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Annual Net Benefit <small>(① Savings + ② Revenue − ③ OpCost)</small></h5>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Annual Net Benefit</h5>
     <div class="hoo-spec-table">
       <table class="hoo-table cpx-basis-table">
-        <colgroup><col><col style="width:130px"><col style="width:130px"></colgroup>
+        <colgroup><col><col style="width:140px"><col style="width:140px"></colgroup>
         ${cmpTableHead(false)}
         <tbody>${nbRows}</tbody>
       </table>
     </div>
     ${fbox([
-      ['Net Benefit (Expected)', fb.nbE, 'cpxS10FbNbE'],
-      ['Net Benefit (Actual)', `= ${nbA[0]} + ${nbA[1]} − ${nbA[2]} = <b>${nbA[3]}</b>`],
+      ['ROI (Expected)', fb.roiE, 'cpxS10FbRoiE'],
+      ['ROI (Actual)', `= ${nbTotalActual} ÷ ${fmtUsd(actualCost)} × 100 = <b>${d.roiCompare[0].actual}</b>`],
+      ['Payback (Expected)', fb.paybackE, 'cpxS10FbPbE'],
+      ['Payback (Actual)', `= ${fmtUsd(actualCost)} ÷ ${nbTotalActual} = <b>${d.roiCompare[1].actual}</b>`],
     ])}
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>ROI — Expected vs Actual <small>(Annual)</small></h5>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>ROI — Expected vs Actual</h5>
     <div class="cpx-cmp-row">
       ${cmpBox(f.roi, 'Expected ROI', '', 'cpxS10RoiCard')}
       ${cmpBox(d.roiCompare[0].actual, 'Actual ROI', 'is-actual')}
@@ -3054,19 +3258,11 @@ function renderStage10() {
     </div>
     <div class="hoo-spec-table">
       <table class="hoo-table">
-        <colgroup><col style="width:300px"><col style="width:110px"><col style="width:110px"><col></colgroup>
-        ${cmpTableHead(true)}
+        <colgroup><col><col style="width:22%"><col style="width:22%"></colgroup>
+        ${cmpTableHead(false)}
         <tbody>${roiRows}</tbody>
       </table>
     </div>
-    ${fbox([
-      ['ROI (Expected)', fb.roiE, 'cpxS10FbRoiE'],
-      ['ROI (Actual)', `= ${nbA[3]} ÷ ${fmtUsdK(actualCost)} × 100 = <b>${d.roiCompare[0].actual}</b>`],
-      ['Payback (Expected)', fb.paybackE, 'cpxS10FbPbE'],
-      ['Payback (Actual)', `= ${fmtUsdK(actualCost)} ÷ ${nbA[3]} = <b>${d.roiCompare[1].actual}</b>`],
-      ['IRR', `= Discount rate that makes NPV = 0 over 5-year cash flow (Excel IRR function)`],
-      ['NPV (Expected)', fb.npvE, 'cpxS10FbNpvE'],
-    ])}
 
     <h5 class="bi-block-title"><span class="bi-bar"></span>CCC Impact — Expected vs Actual</h5>
     <div class="cpx-cmp-row cols-2">
@@ -3074,33 +3270,19 @@ function renderStage10() {
       ${cmpBox(d.cccCompare[0].actual, 'DIO Reduction (Actual)', 'is-actual')}
     </div>
     <div class="cpx-cmp-row cols-2">
-      ${cmpBox(fmtUsdK(c.wcSavings), 'Working Capital Savings (Expected)', '', 'cpxS10WcE')}
-      ${cmpBox(d.cccCompare[2].actual, 'Working Capital Savings (Actual)', 'is-actual')}
+      ${cmpBox(`${fmtUsd(Math.round(c.wcSavings / 1000) * 1000)}/yr`, 'Working Capital Savings (Expected)', '', 'cpxS10WcE')}
+      ${cmpBox(`${d.cccCompare[2].actual}/yr`, 'Working Capital Savings (Actual)', 'is-actual')}
     </div>
     ${fbox([
-      ['DIO (Days Inventory Outstanding)', `= (Avg Inventory ÷ Annual COGS) × 365`],
       ['Working Capital Savings (Expected)', fb.wcE, 'cpxS10FbWcE'],
-      ['CCC (Cash Conversion Cycle)', `= DIO + DSO (Days Sales Outstanding) − DPO (Days Payable Outstanding)`],
+      ['Working Capital Savings (Actual)', `= (${fmtUsd(c.cogs)} ÷ 365) × ${Math.abs(parseFloat(d.cccCompare[0].actual)).toFixed(1)} = <b>${d.cccCompare[2].actual}/yr</b>`],
     ])}
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Summary &amp; Lessons Learned</h5>
-    <div class="form-grid">
-      <div class="form-group span-2">
-        <label>Assessment</label>
-        <div class="aniInput"><input type="text" class="browser-default" value="${d.assessment}"><span class="focus-border"></span></div>
-      </div>
-      <div class="form-group span-2">
-        <label>Lessons Learned</label>
-        <div class="aniInput"><input type="text" class="browser-default" value="${d.lessons}"><span class="focus-border"></span></div>
-      </div>
-      <div class="form-group">
-        <label>Review Date</label>
-        <div class="aniInput"><input type="text" class="browser-default cpx-date" value="${d.reviewDate}"><span class="focus-border"></span></div>
-      </div>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Investment Summary</h5>
+    <div class="cpx-fbox">
+      <span class="cpx-flabel">Result</span>
+      <span class="cpx-fexpr">${d.assessment}</span>
     </div>
-
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Attachments</h5>
-    ${attachZoneHtml(d.attachments)}
   `;
 }
 
@@ -3111,34 +3293,31 @@ function refreshStage10Expected(c) {
   const d  = capexCase.stage10;
   const d2 = capexCase.stage2;
   const f  = fmtStage2(c);
+  const setIf = (id, v) => { const el = get(id); if (el) el.textContent = v; };
 
-  get('cpxS10SavE').textContent = fmtUsdAuto(c.savings);
-  get('cpxS10RevE').textContent = fmtUsdAuto(c.revenue);
+  setIf('cpxS10SavE', fmtUsd(c.savings));
+  setIf('cpxS10RevE', fmtUsd(c.revenue));
   const savA = parseUsdC(d.savings.actual);
   const revA = parseUsdC(d.revenue.actual);
-  get('cpxS10SavPct').textContent = fmtPct(c.savings > 0 ? (savA - c.savings) / c.savings * 100 : 0);
-  get('cpxS10RevPct').textContent = fmtPct(c.revenue > 0 ? (revA - c.revenue) / c.revenue * 100 : 0);
+  setIf('cpxS10SavPct', fmtPct(c.savings > 0 ? (savA - c.savings) / c.savings * 100 : 0));
+  setIf('cpxS10RevPct', fmtPct(c.revenue > 0 ? (revA - c.revenue) / c.revenue * 100 : 0));
 
-  [fmtUsdK(c.savings), fmtUsdK(c.revenue), fmtUsdK(c.opCost), fmtUsdK(c.netBenefit)]
-    .forEach((v, i) => { get(`cpxS10NbE${i}`).textContent = v; });
-  [f.roi, c.payback != null ? `${c.payback.toFixed(1)} yr` : '—', f.irr, fmtUsdK(c.npv)]
-    .forEach((v, i) => { get(`cpxS10RoiE${i}`).textContent = v; });
-  /* CCC 카드 + ROI 비교 카드 (없으면 skip — 카드 전환 2026-07-09) */
-  const setIf = (id, v) => { const el = get(id); if (el) el.textContent = v; };
+  /* 표기 참조 정합 — 풀 자릿수, OpCost 괄호 (renderStage10 nbExpected/roiExpected 와 동일 포맷) */
+  [fmtUsd(c.savings), fmtUsd(c.revenue), `(${fmtUsd(c.opCost)})`, fmtUsd(c.netBenefit)]
+    .forEach((v, i) => setIf(`cpxS10NbE${i}`, v));
+  [f.roi, c.payback != null ? `${c.payback.toFixed(1)} yrs` : '—', f.irr, f.npv]
+    .forEach((v, i) => setIf(`cpxS10RoiE${i}`, v));
   setIf('cpxS10DioE', `-${d2.dioReduction.toFixed(1)} days`);
-  setIf('cpxS10WcE', fmtUsdK(c.wcSavings));
+  setIf('cpxS10WcE', `${fmtUsd(Math.round(c.wcSavings / 1000) * 1000)}/yr`);
   setIf('cpxS10RoiCard', f.roi);
-  setIf('cpxS10RoiDelta', `+${(parseFloat(capexCase.stage10.roiCompare[0].actual) - c.roi).toFixed(1)}%p`);
+  setIf('cpxS10RoiDelta', `+${(parseFloat(d.roiCompare[0].actual) - c.roi).toFixed(1)}%p`);
 
   /* 산식 풀이 밴드 (Expected 측) 도 같이 갱신 — 안 하면 박스 숫자만 바뀌고 산식은 stale */
   const fb = s10FbExpr(c, d);
-  get('cpxS10FbSav').innerHTML  = fb.sav;
-  get('cpxS10FbRev').innerHTML  = fb.rev;
-  get('cpxS10FbNbE').innerHTML  = fb.nbE;
-  get('cpxS10FbRoiE').innerHTML = fb.roiE;
-  get('cpxS10FbPbE').innerHTML  = fb.paybackE;
-  get('cpxS10FbNpvE').innerHTML = fb.npvE;
-  get('cpxS10FbWcE').innerHTML  = fb.wcE;
+  const setHtml = (id, h) => { const el = get(id); if (el) el.innerHTML = h; };
+  setHtml('cpxS10FbRoiE', fb.roiE);
+  setHtml('cpxS10FbPbE',  fb.paybackE);
+  setHtml('cpxS10FbWcE',  fb.wcE);
 }
 
 /* =================================================================
@@ -3385,6 +3564,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  /* Materialize FormSelect — 폼 영역 셀렉트 일괄 init (master-data 어법).
+     browser-default 붙은 셀렉트(테이블 내부 bi-select)는 Materialize 가 스스로 스킵 */
+  if (window.M && M.FormSelect) {
+    try { M.FormSelect.init(document.querySelectorAll('select')); }
+    catch (e) { console.warn('[capex] FormSelect init 실패:', e); }
+  }
+
   if (typeof initAllHooTableOverlays === 'function') initAllHooTableOverlays();
   if (typeof initHBtnGlass === 'function') initHBtnGlass();
 
@@ -3406,8 +3592,15 @@ document.addEventListener('DOMContentLoaded', () => {
   /* Stage 1 Category → 필수 서류 자동 매핑 + Cost Estimate 자동 합계 + Schedule 입력 연동 */
   bindCategoryDocs();
   bindCostEstimate();
+  bindCeUpload();
   bindSchedule();
   bindSpendSchedule();
+
+  /* Stage 3 Utility Requirements — 행 추가/삭제 (Prototype V2.0) */
+  bindUtilities();
+
+  /* Stage 8 Budget Transfer / Closure 버튼 (Prototype V2.0) */
+  bindStage8Extras();
 
   /* Stage 6 AR Supplements — 행 추가/삭제 + 합계 */
   bindSupplements();

@@ -31,13 +31,31 @@ const capexFlow = [
  * 실제로는 마스터데이터 시스템 연동 — 프로토타입에서는 고정 mock.
  * ================================================================= */
 const CPX_MASTER = {
+  /* Location — 마스터 23개소 확정 (Prototype V2.0 반영, 2026-08-18) */
   sites: [
-    'Waterford / PA (Performance Additives)',
-    'Leverkusen / SE (Silicone Elastomers)',
-    'Itatiba / CS (Consumer Sealants)',
-    'Ohta / EP (Engineered Products)',
-    'Nantong / SF (Silicone Fluids)',
-    'Rayong / SP (Specialty Products)',
+    'Waterford',
+    'Sistersville',
+    'Garrett',
+    'HQ',
+    'Pearl River',
+    'Texas City',
+    'Gahana',
+    'Lostock',
+    'Abington',
+    'Bangalore Tech-Center',
+    'Charlotte Tire Lab',
+    'Chennai',
+    'Daejuk',
+    'Hwaseong',
+    'Itatiba',
+    'Jeonju',
+    'Leverkusen',
+    'Nantong',
+    'Nikhom Phatthana',
+    'Ohta',
+    'Jasmine',
+    'Shanghai',
+    'Termoli',
   ],
   depts: [
     'Production',
@@ -130,40 +148,43 @@ const CPX_MASTER = {
     'Petra Vogel — Site Director, Leverkusen',
   ],
 
-  /* Stage 1 — Idea Registration (M-CapEx TFT) Category / SubCategory 마스터 */
-  categories: ['Maintenance', 'EHS', 'Infrastructure', 'Growth', 'Technology', 'Productivity'],
-  subCategories: ['Preventive', 'Corrective', 'Capacity Expansion', 'Compliance', 'Optimization', 'Modernization', 'New Installation', 'Upgrade'],
-  /* Category → Sub Category 후보 (TFT: "Sub Category — to be defined" → 카테고리 연동 로직으로 구체화) */
-  subCatByCategory: {
-    Maintenance:    ['Preventive', 'Corrective', 'Upgrade'],
-    EHS:            ['Compliance', 'Corrective', 'Modernization'],
-    Infrastructure: ['New Installation', 'Modernization', 'Upgrade'],
-    Growth:         ['Capacity Expansion', 'New Installation', 'Upgrade'],
-    Technology:     ['Modernization', 'Optimization', 'Upgrade'],
-    Productivity:   ['Optimization', 'Capacity Expansion', 'Preventive'],
-  },
+  /* Stage 1 — Idea Registration (M-CapEx TFT) Category / SubCategory 마스터
+     Prototype V2.0 확정: Category 9개 / Sub-Category 5개(전략 필러 고정, 카테고리 무관) */
+  categories: ['EHS', 'Growth', 'IT', 'Maintenance', 'Productivity', 'Quality', 'Technology', 'Restructuring', 'HQ'],
+  subCategories: ['Compliance & Process Safety', 'Quality', 'Business Growth', 'Automation & Digital', 'Optimize Global Ops Network'],
+  /* Sub-Category 는 5개 고정 리스트 — 카테고리 연동 폐기 (빈 맵 = 전 카테고리 공통 폴백) */
+  subCatByCategory: {},
   /* Category 선택 → 필수 서류 자동 매핑 (TFT: "If select category information populates for documents needed") */
   categoryDocs: {
-    Growth: [
-      { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
-      { doc: 'RAV Document',             why: 'Return on Assets Verification' },
-    ],
     EHS: [
       { doc: 'EHS Risk Assessment',      why: 'Regulatory / safety compliance review' },
       { doc: 'Permit Checklist',         why: 'Environmental permit validation' },
     ],
+    Growth: [
+      { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
+      { doc: 'RAV Document',             why: 'Return on Assets Verification' },
+    ],
+    IT: [
+      { doc: 'IT Architecture Review',   why: 'System landscape & security compliance' },
+    ],
     Maintenance: [
       { doc: 'Breakdown History Report', why: 'CMMS failure records for justification' },
     ],
-    Infrastructure: [
-      { doc: 'Site Master Plan Extract', why: 'Alignment with site infrastructure plan' },
+    Productivity: [
+      { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
+    ],
+    Quality: [
+      { doc: 'Quality Impact Assessment', why: 'Product quality / validation impact review' },
     ],
     Technology: [
       { doc: 'Technology Assessment',    why: 'Fit / obsolescence review' },
       { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
     ],
-    Productivity: [
-      { doc: 'Project Financials',       why: 'Required for IRR / NPV calculation' },
+    Restructuring: [
+      { doc: 'Restructuring Business Case', why: 'Organization & cost restructuring justification' },
+    ],
+    HQ: [
+      { doc: 'HQ Investment Brief',      why: 'Corporate-level review summary' },
     ],
   },
 
@@ -199,8 +220,18 @@ const capexCase = {
     title: 'New Reactor Installation — Polymer Line Capacity Expansion',
     ideaNo: 'WTFD-0042',            /* 사이트 기반 자동 채번 (SVLL-####, WTFD-#### …) */
     category: 'Growth',             /* CPX_MASTER.categories */
-    subCategory: 'Capacity Expansion',
+    subCategory: 'Business Growth', /* Prototype V2.0 — 5개 전략 필러 중 선택 */
+    costCenter: 'CC-4200-WTFD-MFG', /* Prototype V2.0 — 수기 입력 필드 */
     description: 'Polymer line at 95% utilization. $3,200,000 potential orders at risk in 2027 without expansion. +30% capacity needed. New reactor to be installed on existing foundation with piping tie-ins to current process infrastructure. Estimated 8-month implementation timeline from AR approval through commissioning.',
+    /* Requested Timing — 자본 계획용 희망 시점 (Prototype V2.0 신규 섹션) */
+    requestedStart: '2026 Q2',
+    requestedCompletion: '2026 Q4',
+    planningYear: '2026',
+    /* Idea 첨부 (Prototype V2.0 — 문서 첨부 기능) */
+    attachments: [
+      { kind: 'file', label: 'Project_Proposal.pdf',      size: '1.2 MB' },
+      { kind: 'file', label: 'Preliminary_Estimate.xlsx', size: '340 KB' },
+    ],
     submitted: 'Submitted on Jan 18, 2026 by JONGHO LEE',
     /* Schedule — TFT 최소 구성: AR Approval / Procurement / Construction / (Commissioning) / Closure.
        사용자 입력(시작/종료 데이트피커) → 타임라인·Duration 동적 갱신 (2026-07-09) */
@@ -238,7 +269,7 @@ const capexCase = {
     classification: 'Strategic Growth',
     background: 'Polymer line at 95% utilization. $3.2M potential orders at risk in 2027 without expansion.',
     purpose: '+30% capacity to meet 2027 demand and secure long-term supply contracts.',
-    site: 'Waterford / PA (Performance Additives)',
+    site: 'Waterford',              /* CPX_MASTER.sites (23개소 마스터) */
     dept: 'Production',
     requester: 'JONGHO LEE',
     estBudget: '2,800,000',
@@ -277,9 +308,8 @@ const capexCase = {
     annualCogs: 18800000,    /* $/yr — Cost of Goods Sold (TFT 참조 값: WC Savings ≈ $180,000/yr) */
     dioReduction: 3.5,       /* days — 재고 보유일수 감소분 (입력) */
     leadTimeReduction: 2.0,  /* days — 리드타임 단축 (입력, 계산 미사용) */
-    /* PDF 명세: Risk = 선택(High/Medium/Low) + 위험 요소 기술(text) 2필드 */
+    /* Risk = 선택(High/Medium/Low) — 참조(Rv2.0) 기준. Risk Description 텍스트 필드는 제거 (2026-08-18) */
     riskLevel: 'Medium',
-    riskNote: 'Existing line needs 3-week stop during installation. Scheduled during planned maintenance to reduce impact.',
     reviewResult: 'Approved',
     attachments: [
       { kind: 'file', label: 'Feasibility_Report.pdf', size: '1.2 MB' },
@@ -294,6 +324,10 @@ const capexCase = {
     name: 'David Thompson — VP Operations, Waterford',
     decision: 'Advanced to AR',
     assignedPm: 'K. Park',
+    /* Gatekeeper Comments (Prototype V2.0 신규 섹션) */
+    notes: 'Strong business case — aligns with capacity growth strategy for Waterford site. ROI and payback period are within acceptable range. Recommend proceeding to AR with updated spend schedule from PM. Vendor pre-qualification should be completed before procurement phase.',
+    /* Major Project Designation (Prototype V2.0 신규) — 예산 > $1M 자동 플래그 */
+    majorProject: 'Yes',
     history: [
       { date: 'Jan 20, 2026', action: 'Received',       by: 'System',      note: 'Auto-routed to site gatekeeper' },
       { date: 'Jan 22, 2026', action: 'Reviewed',       by: 'D. Thompson', note: 'Strong business case — aligns with capacity growth strategy' },
@@ -338,6 +372,12 @@ const capexCase = {
       { name: 'Steam',          spec: '10 bar — 2,000 kg/hr' },
       { name: 'Cooling Water',  spec: '25°C — 500 m³/hr' },
       { name: 'Instrument Air', spec: '6 bar — oil-free' },
+    ],
+    /* Specification Documents — 스펙 단계 첨부 (Prototype V2.0 신규 섹션) */
+    specDocs: [
+      { kind: 'file', label: 'EHS_Risk_Assessment.pdf',      size: '3.1 MB' },
+      { kind: 'file', label: 'Engineering_Spec_RX2001.pdf',  size: '2.8 MB' },
+      { kind: 'file', label: 'P&ID_Drawing.dwg',             size: '5.4 MB' },
     ],
     /* 비교 대상 기존 설비 — (EQUIP MASTERDATA) 퀵서치 + 타입 요약 (TFT 2필드 구성) */
     referenceEquip: 'RX-1001 (Polymer Reactor, Line #1, Waterford)',
@@ -465,6 +505,27 @@ const capexCase = {
       { po: 'PO-4500078950', desc: 'Installation Services', vendor: 'Vendor B', amount: '$ 185,000',   status: 'In Progress' },
       { po: 'PO-4500078962', desc: 'Electrical Work',       vendor: 'Vendor C', amount: '$ 95,000',    status: 'Pending' },
     ],
+    /* Cost Drill-Down — 비용 요소별 예산·실적·약정·잔액 (Prototype V2.0 신규).
+       Available 합계 → Budget Availability Check 배너의 잔여예산 */
+    drillDown: [
+      { el: 'Purchase Orders',     budget: 2280000, actuals: 1420000, committed: 2280000, available: null },
+      { el: 'Work Orders',         budget: 120000,  actuals: 75000,   committed: 95000,   available: 25000 },
+      { el: 'Capital Engineering', budget: 85000,   actuals: 62000,   committed: 85000,   available: null },
+      { el: 'AR Expense',          budget: 35000,   actuals: 28000,   committed: 35000,   available: null },
+      { el: 'Prior Approved',      budget: 280000,  actuals: 35000,   committed: 65000,   available: 215000 },
+    ],
+    /* Retired Assets — 이 프로젝트로 교체/폐기되는 기존 자산 (Prototype V2.0 신규) */
+    retiredAssets: [
+      { id: 'FA-2018-WF-0034', desc: 'Reactor RX-1001 (8,000L Glass-Lined)', book: '$ 42,000', date: 'Nov 30, 2026', status: 'Scheduled' },
+      { id: 'FA-2019-WF-0112', desc: 'Agitator Motor (22kW)',                book: '$ 8,500',  date: 'Nov 30, 2026', status: 'Scheduled' },
+    ],
+    /* Project Closure Document — 자산 목록·최종 비용 기반 자동 생성 (Prototype V2.0 신규) */
+    closure: {
+      created:   '2 — RX-2001, Motor-2001',
+      retired:   '2 — RX-1001, Motor-1001',
+      finalCost: '$ 2,580,000',
+      variance:  '− $ 220,000 (7.9% under budget)',
+    },
     /* Fixed Assets — 재무 마감 연계: 이관 양식 → 재무 검증 → 고정자산 등재 */
     fixedAsset: [
       { role: 'Asset Transfer Form',  name: 'Sent by K. Park',      date: 'Nov 21, 2026' },
@@ -533,28 +594,28 @@ const capexCase = {
   /* Stage 10 — Actual ROI Analysis */
   stage10: {
     budget: { approved: '$ 2.80M', actual: '$ 2.58M', delta: '-$ 0.22M', variancePct: 7.9 },
-    savings:  { expected: '$ 350K', actual: '$ 412K',  pct: '+17.7%' },
-    revenue:  { expected: '$ 1.20M', actual: '$ 1.38M', pct: '+15.0%' },
+    savings:  { expected: '$ 350K', actual: '$ 412,000' },
+    revenue:  { expected: '$ 1.20M', actual: '$ 1,380,000' },
     /* Expected 컬럼은 전부 calcStage2() live 산출 (detail.js renderStage10) — 여기엔 actual 만 보관.
-       (구식 하드코딩 expected mock 제거, 2026-06-09) */
+       라벨·표기는 참조(Rv2.0) 정합: 풀 자릿수, ①②③ 제거 (2026-08-18) */
     netBenefit: [
-      { label: '① Annual Cost Savings',            actual: '$ 412K'  },
-      { label: '② Annual Incremental Revenue',     actual: '$ 1,380K' },
-      { label: '③ Annual Operating Cost Increase', actual: '$ 400K'  },
-      { label: 'Annual Net Benefit (① + ② − ③)',   actual: '$ 1,392K', total: true },
+      { label: 'Cost Savings',            actual: '$ 412,000'  },
+      { label: 'Revenue Impact',          actual: '$ 1,380,000' },
+      { label: 'Operating Cost Increase', actual: '$ 400,000'  },
+      { label: 'Net Annual Benefit',      actual: '$ 1,392,000', total: true },
     ],
     roiCompare: [
-      { label: 'ROI (%)',          actual: '53.9%',     formula: 'Annual Net Benefit ÷ Total Investment × 100' },
-      { label: 'Payback Period',   actual: '1.9 yr',    formula: 'Total Investment ÷ Annual Net Benefit' },
-      { label: 'IRR',              actual: '31.4%',     formula: 'Discount rate at which NPV = 0' },
-      { label: 'NPV',              actual: '$ 1,620K',  formula: 'Σ Cash Flow ÷ (1 + r)ⁿ − Investment' },
+      { label: 'ROI',            actual: '53.9%' },
+      { label: 'Payback Period', actual: '1.9 yrs' },
+      { label: 'IRR',            actual: '31.4%' },
+      { label: 'NPV',            actual: '$ 1,620,000' },
     ],
     cccCompare: [
-      { label: 'DIO Reduction (Days Inventory Outstanding)', actual: '-4.1 days', formula: 'Days inventory reduced (Before − After)' },
-      { label: 'Lead Time Reduction',                        actual: '-2.5 days', formula: 'Production time reduced (Before − After)' },
-      { label: 'Working Capital Savings',                    actual: '$ 210K', formula: 'Cash freed by less inventory (Daily COGS × days saved)' },
+      { label: 'DIO Reduction (Days Inventory Outstanding)', actual: '-4.1 days' },
+      { label: 'Lead Time Reduction',                        actual: '-2.5 days' },
+      { label: 'Working Capital Savings',                    actual: '$ 210,000' },
     ],
-    assessment: 'All targets exceeded. 7.9% under budget. ROI +11.4%p above forecast.',
+    assessment: 'All targets exceeded. 7.9% under budget. ROI +11.4%p above forecast. Project completed $220,000 under budget. Actual ROI of 53.9% exceeds forecast by +11.4 percentage points. Payback period improved from 2.4 years to 1.9 years. CCC working capital savings of $210,000/yr surpassed the $180,000/yr target.',
     lessons: 'Verify fabrication delivery dates more strictly upfront. Parallel site prep was effective — recommend as standard practice.',
     reviewDate: 'May 20, 2027',
     attachments: [
