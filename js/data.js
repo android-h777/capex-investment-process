@@ -626,6 +626,48 @@ const capexCase = {
 };
 
 /* =================================================================
+ * CAPEX 리스트 — index.html 프로젝트/아이디어 목록 (2026-08-18)
+ * master-data mrList 어법의 CAPEX 버전.
+ *   id:  AR 번호 — WV[연도 2자리][일련 3자리] (예: WV26001 = 2026년 001호. WV 는 고정 프리픽스).
+ *        Stage 5 승인 시 자동 채번 — 그 이전 단계(request~approval 전)는 Idea 번호
+ *        ([사이트코드]-[일련 4자리], 예: WTFD-0058 — 이쪽은 사이트 기반 채번)
+ *   currentNode: capexFlow key — inprogress 의 현재 단계 / approved 는 null(전체 완료)
+ *   person:      Requestor / owner: 현재 단계 처리 담당자 (Process Flow 툴팁용)
+ *   budget/actual: $ (null = 미확정)
+ * ================================================================= */
+const cpxStageOwners = {
+  /* Process Flow 노드 툴팁용 단계별 기본 담당 (mock). request 는 각 항목의 requestor */
+  request:     null,
+  feasibility: 'Sarah Chen',
+  spec:        'Michael Brown',
+  gatekeeper:  'David Thompson',
+  approval:    'DOA Chain · CFO M. Brown',
+  budget:      'Anna Schmidt (Finance)',
+  tbe:         'Procurement Team',
+  execution:   'K. Park (PM)',
+  tracking:    'K. Park (PM)',
+  actual:      'Finance Controller',
+};
+
+const capexList = [
+  /* ── Waterford (WV26001 = 상세 페이지 mock 케이스) ── */
+  { id: 'WV26001',   name: 'New Reactor — Polymer Line Capacity Expansion', site: 'Waterford',    cat: 'Growth',       subCat: 'Business Growth',             status: 'approved',   currentNode: null,          person: 'JONGHO LEE',    owner: null,                            date: 'Jan 15, 2026', budget: 2800000, actual: 2580000 },
+  { id: 'WV26002',   name: 'Cooling Tower Replacement',                     site: 'Waterford',    cat: 'Maintenance',  subCat: 'Optimize Global Ops Network', status: 'inprogress', currentNode: 'execution',   person: 'Sarah Chen',    owner: 'K. Park',                       date: 'Feb 20, 2026', budget: 450000,  actual: 380000 },
+  { id: 'WV26003',   name: 'Wastewater Treatment Upgrade',                  site: 'Waterford',    cat: 'EHS',          subCat: 'Compliance & Process Safety', status: 'inprogress', currentNode: 'execution',   person: 'Anna Schmidt',  owner: 'K. Park',                       date: 'Mar 2, 2026',  budget: 1200000, actual: 210000 },
+  { id: 'WV26004',   name: 'Lab Equipment Modernization',                   site: 'Waterford',    cat: 'Technology',   subCat: 'Automation & Digital',        status: 'inprogress', currentNode: 'execution',   person: 'Michael Brown', owner: 'K. Park',                       date: 'Jan 28, 2026', budget: 680000,  actual: 520000 },
+  { id: 'WV26005',   name: 'Tank Farm Expansion',                           site: 'Waterford',    cat: 'Growth',       subCat: 'Business Growth',             status: 'inprogress', currentNode: 'tbe',         person: 'David Park',    owner: 'Procurement Team',              date: 'Apr 10, 2026', budget: 1500000, actual: 95000 },
+  { id: 'WV26006',   name: 'Fire Suppression System',                       site: 'Waterford',    cat: 'EHS',          subCat: 'Compliance & Process Safety', status: 'inprogress', currentNode: 'execution',   person: 'Maria Santos',  owner: 'K. Park',                       date: 'Feb 12, 2026', budget: 920000,  actual: 312000 },
+  { id: 'WV26007',   name: 'Compressor Overhaul',                           site: 'Waterford',    cat: 'Maintenance',  subCat: 'Optimize Global Ops Network', status: 'inprogress', currentNode: 'approval',    person: 'JONGHO LEE',    owner: 'M. Brown (CFO)',                date: 'Jun 18, 2026', budget: 850000,  actual: 63000 },
+  /* ── 타 사이트 — 단계·상태 다양화 ── */
+  { id: 'SVLL-0112', name: 'Silane Dosing Automation',                      site: 'Sistersville', cat: 'Technology',   subCat: 'Automation & Digital',        status: 'inprogress', currentNode: 'feasibility', person: 'Sarah Chen',    owner: 'JONGHO LEE',                    date: 'Jun 25, 2026', budget: 640000,  actual: null },
+  { id: 'WV26009',   name: 'Boiler NOx Compliance Retrofit',                site: 'Sistersville', cat: 'EHS',          subCat: 'Compliance & Process Safety', status: 'inprogress', currentNode: 'budget',      person: 'Michael Brown', owner: 'Anna Schmidt (Finance)',        date: 'May 22, 2026', budget: 1100000, actual: null },
+  { id: 'WTFD-0058', name: 'Warehouse Racking Seismic Retrofit',            site: 'Waterford',    cat: 'EHS',          subCat: 'Compliance & Process Safety', status: 'inprogress', currentNode: 'request',     person: 'JONGHO LEE',    owner: 'JONGHO LEE',                    date: 'Jul 2, 2026',  budget: 380000,  actual: null },
+  { id: 'LVRK-0034', name: 'Mixer Line Energy Recovery',                    site: 'Leverkusen',   cat: 'Productivity', subCat: 'Optimize Global Ops Network', status: 'inprogress', currentNode: 'gatekeeper',  person: 'Anna Schmidt',  owner: 'Petra Vogel — Site Director',   date: 'Jun 30, 2026', budget: 520000,  actual: null },
+  { id: 'OHTA-0021', name: 'Batch Record Digitalization',                   site: 'Ohta',         cat: 'IT',           subCat: 'Automation & Digital',        status: 'rejected',   currentNode: 'gatekeeper',  person: 'David Park',    owner: 'Kenji Sato — Site Director',    date: 'May 8, 2026',  budget: 290000,  actual: null },
+  { id: 'WV25003',   name: 'Sealant Filling Line Upgrade',                  site: 'Itatiba',      cat: 'Quality',      subCat: 'Quality',                     status: 'approved',   currentNode: null,          person: 'Maria Santos',  owner: null,                            date: 'Oct 12, 2025', budget: 760000,  actual: 741000 },
+];
+
+/* =================================================================
  * Workflow state helper — calcNodeStates({ flow, currentNode })
  * - currentNode 보다 앞: 'done'
  * - currentNode: 'current'

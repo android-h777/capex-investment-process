@@ -8,6 +8,28 @@
 const params = new URLSearchParams(window.location.search);
 const pCurrentNode = params.get('currentNode') || capexCase.currentNode || 'request';
 
+/* ----- 리스트 컨텍스트 — master-data 어법: 리스트 항목의 신원(id/제목/사이트/카테고리/
+   요청자/날짜/예산/상태)으로 상세를 덮어쓰기. 심층 수치(Cost Estimate·차트·트래커)는
+   mock 케이스(WV26001) 유지 — 신원·상태·플로우만 리스트를 따름 (2026-08-18) ----- */
+(function applyListContext() {
+  const c = capexCase;
+  const g = (k) => params.get(k);
+  if (g('id')) {
+    c.listId = g('id');
+    /* AR 번호(WV+연도2+일련3)면 stage3.arNo 교체, Idea 번호면 stage1.ideaNo 교체 */
+    if (/^WV\d{5}$/.test(g('id'))) c.stage3.arNo = g('id');
+    else c.stage1.ideaNo = g('id');
+  }
+  if (g('desc'))   { c.title = g('desc'); c.stage1.title = g('desc'); }
+  if (g('site'))   c.stage1.site = g('site');
+  if (g('cat'))    { c.stage1.category = g('cat'); c.classification = g('cat'); }
+  if (g('subCat')) c.stage1.subCategory = g('subCat');
+  if (g('person')) { c.stage1.requester = g('person'); c.requester.name = g('person'); }
+  if (g('date'))   { c.stage1.requestDate = g('date'); c.lastMod = `Requested ${g('date')}`; }
+  if (g('budget')) c.listBudget = Number(g('budget'));
+  if (g('status')) c.status = g('status') === 'approved' ? 'completed' : g('status');
+})();
+
 /* ----- Smooth scroll (master-data pattern) ----- */
 function smoothScrollTo(target, offset) {
   if (!target) return;
@@ -93,17 +115,19 @@ function renderRouting() {
   if (sm) {
     const c = capexCase;
     /* Supplement 행 — Stage 6 AR Supplements 와 연동 (#cpxSuppCount 를 bindSupplements 가 갱신)
-       Status — 섹션 타이틀과 동일한 mr-status 필 (Completed sage / In Execution baltic)
-       레이아웃 — Project ID 만 인라인, 나머지는 전부 라벨 좌 / 값 우측정렬 (rt-key-r, 참조 사이드바 어법) */
-    const stDone = c.status === 'completed';
+       Status — 리스트와 동일한 3상태 필 (Completed sage / In Progress baltic / Rejected danger)
+       레이아웃 — 전부 라벨 좌 / 값 우측정렬 (rt-key-r, 참조 사이드바 어법) */
+    const stMap = { completed: ['st-approved', 'Completed'], rejected: ['st-rejected', 'Rejected'] };
+    const [stCls, stLbl] = stMap[c.status] || ['st-inprogress', 'In Progress'];
+    const budgetTxt = c.listBudget != null ? c.listBudget.toLocaleString('en-US') : c.stage1.estBudget;
     const rRow = (k, vHtml) => `<div class="rt-key rt-key-r"><span class="rt-k">${k}</span>${vHtml}</div>`;
     sm.innerHTML = `<div class="rt-keys">`
-    + rRow('Project ID', `<span class="rt-v rt-v-hl">${c.stage3.arNo}</span>`)
+    + rRow('Project ID', `<span class="rt-v rt-v-hl">${c.listId || c.stage3.arNo}</span>`)
     + rRow('Project',    `<span class="rt-v">${c.title}</span>`)
     + rRow('Site',       `<span class="rt-v">${c.stage1.site.split(' (')[0]}</span>`)
-    + rRow('Budget',     `<span class="rt-v">$ ${c.stage1.estBudget}</span>`)
+    + rRow('Budget',     `<span class="rt-v">$ ${budgetTxt}</span>`)
     + rRow('Supplement', `<span class="rt-v" id="cpxSuppCount">$ 0</span>`)
-    + rRow('Status',     `<span class="mr-status mr-pill-sm ${stDone ? 'st-approved' : 'st-inprogress'}">${stDone ? 'Completed' : 'In Execution'}</span>`)
+    + rRow('Status',     `<span class="mr-status mr-pill-sm ${stCls}">${stLbl}</span>`)
     + `</div>`;
   }
 
@@ -232,7 +256,10 @@ function renderStages() {
   let html = '';
   states.forEach(n => {
     const body = renderStageBody(n.key);
-    const stForTitle = (capexCase.status === 'completed') ? 'done' : n.state;
+    /* 섹션 상태 필 — 리스트 상태 반영: completed = 전부 done / rejected = 현재 단계에 반려 표시 */
+    const stForTitle = capexCase.status === 'completed' ? 'done'
+                     : (capexCase.status === 'rejected' && n.state === 'current') ? 'rejected'
+                     : n.state;
     const date = stageDateFor(n.key);
     html += `<section class="detail-section glass-panel stage-${n.key}" data-stage-key="${n.key}" data-stage-no="${n.no}">
       ${buildSectionTitleHtml(n.icon, `Stage ${n.no}. ${n.label}`, stForTitle, date)}
@@ -3540,7 +3567,7 @@ function bindSelectChevron(root) {
 document.addEventListener('DOMContentLoaded', () => {
   applyTitleBar({
     badgeText: capexCase.classification,
-    idText:    capexCase.stage3.arNo,   /* 좌측 Project Summary 의 Project ID(WV26001)와 통일 (2026-07-09) */
+    idText:    capexCase.listId || capexCase.stage3.arNo,   /* 좌측 Project Summary 의 Project ID 와 통일 */
     descText:  capexCase.title,
     lastModText: capexCase.lastMod,
   });

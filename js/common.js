@@ -55,14 +55,23 @@ window.initHBtnGlass = function initHBtnGlass(root) {
       setTimeout(() => btn.querySelectorAll('.waves-ripple').forEach(r => r.remove()), 600);
     });
   });
-  /* Materialize Waves 재바인딩 — NodeList 통째 attach 가 toLowerCase 에러로 죽는 케이스
-     (Modal과 동일 패턴). element별 호출 + try/catch 로 격리. */
+  /* Materialize Waves 재바인딩 — 동적 렌더 요소(.cpx-waves-bound 마커 없음)에만 1회.
+     ※ 이미 바인딩된 요소에 재-attach 하면 클릭당 리플이 2중 생성되고 mouseup 은
+       최신 리플만 hide → 이전 리플이 opacity 1 로 영구 잔류 (2026-08-18 jsdom 재현으로 확정).
+       정적 요소는 아래 DOMContentLoaded 마커 단계에서 Materialize 자동 바인딩분으로 표시됨 */
   if (typeof Waves !== 'undefined' && Waves.attach) {
-    scope.querySelectorAll('.waves-effect').forEach(el => {
+    scope.querySelectorAll('.waves-effect:not(.cpx-waves-bound)').forEach(el => {
+      el.classList.add('cpx-waves-bound');
       try { Waves.attach(el); } catch (_) { /* skip individual fails */ }
     });
   }
 };
+/* 정적 .waves-effect 마킹 — Materialize displayEffect(같은 이벤트에서 먼저 실행)가 바인딩한 요소들.
+   common.js 는 materialize 다음·페이지 스크립트(detail.js 등) 이전 로드라, 이 리스너 시점의
+   DOM = 정적 마크업 = Materialize 가 이미 바인딩한 집합과 정확히 일치 */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.waves-effect').forEach(el => el.classList.add('cpx-waves-bound'));
+});
 /* 페이지 로드 시 1회 — 정적 hBtn 처리 */
 document.addEventListener('DOMContentLoaded', () => initHBtnGlass());
 

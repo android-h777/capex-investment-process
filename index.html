@@ -2,10 +2,565 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MPM CAPEX Investment Process</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MPM CAPEX — Investment Projects</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<script>location.replace('detail.html' + location.search + location.hash);</script>
-<meta http-equiv="refresh" content="0; url=detail.html">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/capex.css">
 </head>
-<body></body>
+<body>
+
+<div class="splash" id="splash">
+  <div class="splash-logo">
+    <svg class="capex-logo-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="capexDotGlowSpl" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#fff"    stop-opacity="0.95"/>
+          <stop offset="40%"  stop-color="#FFEFCB" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#FFEFCB" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <path id="capexChartPathSpl" d="M 3.5 18.5 L 9.5 12.5 L 13.5 16.5 L 22 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <g>
+        <circle r="4.5" fill="url(#capexDotGlowSpl)"/>
+        <circle r="1.2" fill="#fff" opacity="0.92"/>
+        <animateMotion dur="3s" repeatCount="indefinite">
+          <mpath href="#capexChartPathSpl"/>
+        </animateMotion>
+      </g>
+    </svg>
+  </div>
+  <div class="splash-text">
+    <div class="splash-title">CAPEX</div>
+    <div class="splash-status">Loading investment data…</div>
+  </div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<header class="app-header">
+  <div class="app-header-inner">
+    <div class="app-title">
+      <div class="app-logo">
+        <svg class="capex-logo-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="capexDotGlowHdr" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="#fff"    stop-opacity="0.95"/>
+              <stop offset="40%"  stop-color="#FFEFCB" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#FFEFCB" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <path id="capexChartPathHdr" d="M 3.5 18.5 L 9.5 12.5 L 13.5 16.5 L 22 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <g>
+            <circle r="4.5" fill="url(#capexDotGlowHdr)"/>
+            <circle r="1.2" fill="#fff" opacity="0.92"/>
+            <animateMotion dur="3s" repeatCount="indefinite">
+              <mpath href="#capexChartPathHdr"/>
+            </animateMotion>
+          </g>
+        </svg>
+      </div>
+      <span class="app-name">MPM CAPEX<span class="app-name-accent"> Investment Process Management</span></span>
+    </div>
+    <div class="app-actions">
+      <a href="#newIdeaModal" class="hBtn hViolet waves-effect modal-trigger"><i class="material-icons left">add</i><span class="label">New Investment</span></a>
+    </div>
+  </div>
+</header>
+
+<main class="app-main">
+
+  <article class="mr-layout">
+    <!-- 좌: 프로젝트 리스트 -->
+    <div class="mr-left">
+      <div class="mr-left-head">
+        <div class="cpx-year-filter">
+          <select id="yearFilter">
+            <option value="">All Years</option>
+            <option selected>2026</option>
+            <option>2025</option>
+          </select>
+        </div>
+        <div class="apple-tab" id="appleTab">
+          <ul>
+            <li class="waves-effect on" data-filter="all">ALL<span class="tab-count" data-count="all"></span></li>
+            <li class="waves-effect" data-filter="inprogress">In Progress<span class="tab-count" data-count="inprogress"></span></li>
+            <li class="waves-effect" data-filter="approved">Completed<span class="tab-count" data-count="approved"></span></li>
+            <li class="waves-effect" data-filter="rejected">Rejected<span class="tab-count" data-count="rejected"></span></li>
+            <div class="tab-bg"></div>
+          </ul>
+        </div>
+        <div class="mr-head-actions">
+          <a href="#searchModal" class="hBtn hOrange waves-effect modal-trigger"><i class="material-icons">search</i><span class="label">Search</span></a>
+        </div>
+      </div>
+      <section class="mr-list-wrap">
+        <ul class="mr-list hScroll" id="mrList"></ul>
+      </section>
+    </div>
+    <!-- 우: 프로젝트 써머리 카드 -->
+    <div class="mr-right">
+      <div class="mr-detail-card" id="mrDetail">
+        <div class="mr-detail-head">
+          <div class="mr-detail-title">
+            <div class="mr-detail-title-wrap" id="dtLink">
+              <span class="mr-detail-id" id="dtId">[WV26001]</span>
+              <span class="mr-detail-desc" id="dtDesc">New Reactor — Polymer Line Capacity Expansion</span>
+            </div>
+          </div>
+          <span class="mr-status st-approved" id="dtStatus">Completed</span>
+        </div>
+        <div class="mr-detail-info">
+          <div class="info-row info-row-split">
+            <span class="info-label">Category</span><span class="info-val" id="dtCat">Growth</span>
+            <span class="info-label">Sub-Category</span><span class="info-val" id="dtSubCat">Business Growth</span>
+          </div>
+          <div class="info-row info-row-split">
+            <span class="info-label">Site</span><span class="info-val" id="dtSite">Waterford</span>
+            <span class="info-label">Budget</span><span class="info-val" id="dtBudget">$ 2,800,000</span>
+          </div>
+          <div class="info-row info-row-split">
+            <span class="info-label">Requestor</span><span class="info-val" id="dtPerson">JONGHO LEE</span>
+            <span class="info-label">Request Date</span><span class="info-val" id="dtDate">Jan 15, 2026</span>
+          </div>
+          <div class="info-row info-row-split">
+            <span class="info-label">Actual to Date</span><span class="info-val" id="dtActual">$ 2,580,000</span>
+            <span class="info-label">Current Stage</span><span class="info-val" id="dtStage">Completed</span>
+          </div>
+        </div>
+        <div class="mr-process-section" id="mrProcess">
+          <div class="mr-process-head">
+            <i class="material-icons">account_tree</i>
+            <span>Process Flow</span>
+          </div>
+          <div class="mr-process-flow" id="mrProcessFlow"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+</main>
+
+<!-- New Idea 모달 — 카테고리 선택 → Stage 1 Idea Registration 진입 -->
+<div id="newIdeaModal" class="modal search-modal">
+  <div class="modal-header">
+    <h5><i class="material-icons">add</i><span>New Investment — Select Category</span></h5>
+    <a href="javascript:;" class="modal-close"><i class="material-icons">close</i></a>
+  </div>
+  <div class="nr-steps">
+    <div class="nr-step active" data-step="1">
+      <div class="step-cards nr-pad nr-cards-6">
+        <div class="step-card waves-effect" data-cat="EHS"><i class="material-icons">health_and_safety</i><span class="step-card-title">EHS</span></div>
+        <div class="step-card waves-effect" data-cat="Growth"><i class="material-icons">trending_up</i><span class="step-card-title">Growth</span></div>
+        <div class="step-card waves-effect" data-cat="IT"><i class="material-icons">dns</i><span class="step-card-title">IT</span></div>
+        <div class="step-card waves-effect" data-cat="Maintenance"><i class="material-icons">build</i><span class="step-card-title">Maintenance</span></div>
+        <div class="step-card waves-effect" data-cat="Productivity"><i class="material-icons">speed</i><span class="step-card-title">Productivity</span></div>
+        <div class="step-card waves-effect" data-cat="Quality"><i class="material-icons">verified</i><span class="step-card-title">Quality</span></div>
+        <div class="step-card waves-effect" data-cat="Technology"><i class="material-icons">precision_manufacturing</i><span class="step-card-title">Technology</span></div>
+        <div class="step-card waves-effect" data-cat="Restructuring"><i class="material-icons">lan</i><span class="step-card-title">Restructuring</span></div>
+        <div class="step-card waves-effect" data-cat="HQ"><i class="material-icons">apartment</i><span class="step-card-title">HQ</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 검색 모달 -->
+<div id="searchModal" class="modal search-modal">
+  <div class="modal-header">
+    <h5><i class="material-icons">search</i>Search</h5>
+    <a href="javascript:;" class="modal-close"><i class="material-icons">close</i></a>
+  </div>
+  <div class="modal-content">
+    <div class="search-field">
+      <label>AR / Idea No.</label>
+      <div class="aniInput">
+        <input type="text" class="browser-default" id="sId" placeholder="WV26001">
+        <span class="focus-border"></span>
+      </div>
+    </div>
+    <div class="search-field">
+      <label>Project Name</label>
+      <div class="aniInput">
+        <input type="text" class="browser-default" id="sName" placeholder="New Reactor">
+        <span class="focus-border"></span>
+      </div>
+    </div>
+    <div class="search-field">
+      <label>Category</label>
+      <select id="sCat">
+        <option value="">All</option>
+        <option>EHS</option>
+        <option>Growth</option>
+        <option>IT</option>
+        <option>Maintenance</option>
+        <option>Productivity</option>
+        <option>Quality</option>
+        <option>Technology</option>
+        <option>Restructuring</option>
+        <option>HQ</option>
+      </select>
+    </div>
+    <div class="search-field">
+      <label>Site</label>
+      <select id="sSite">
+        <option value="">All</option>
+        <option>Waterford</option>
+        <option>Sistersville</option>
+        <option>Leverkusen</option>
+        <option>Itatiba</option>
+        <option>Ohta</option>
+      </select>
+    </div>
+    <div class="search-field">
+      <label>Status</label>
+      <select id="sStatus">
+        <option value="">All</option>
+        <option value="inprogress">In Progress</option>
+        <option value="approved">Completed</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+    <div class="search-field">
+      <label>Requestor</label>
+      <div class="aniInput">
+        <input type="text" class="browser-default" id="sPerson" placeholder="JONGHO LEE">
+        <span class="focus-border"></span>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <a href="javascript:;" class="hBtn hGrey waves-effect" id="btnSearchReset"><i class="material-icons">refresh</i><span class="label">Reset</span></a>
+    <a href="javascript:;" class="hBtn hBlue waves-effect" id="btnSearchApply"><i class="material-icons">search</i><span class="label">Apply</span></a>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const statusLabel = { inprogress: 'In Progress', approved: 'Completed', rejected: 'Rejected' };
+
+  /* 날짜 desc 정렬 (최신순) */
+  capexList.sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
+
+  /* 탭 카운트 */
+  const counts = { all: capexList.length, approved: 0, inprogress: 0, rejected: 0 };
+  capexList.forEach(m => { counts[m.status]++; });
+  Object.entries(counts).forEach(([k, v]) => {
+    const el = document.querySelector(`.tab-count[data-count="${k}"]`);
+    if (el) el.textContent = v;
+  });
+
+  const fmtMoney = (n) => n == null ? '—' : '$ ' + n.toLocaleString('en-US');
+
+  /* 현재 단계 라벨 — capexFlow 에서 조회 (approved = 전체 완료) */
+  function stageLabel(m) {
+    if (m.status === 'approved') return 'Completed';
+    const node = capexFlow.find(n => n.key === m.currentNode);
+    return node ? `Stage ${node.no} · ${node.label}` : '—';
+  }
+
+  /* 상세 URL — 항목 신원 전체를 파라미터로 전달 (master-data 어법: 상세가 이걸로 덮어씀) */
+  function detailUrl(m) {
+    const q = new URLSearchParams({
+      id: m.id, status: m.status, desc: m.name, site: m.site,
+      cat: m.cat, subCat: m.subCat, person: m.person, date: m.date,
+    });
+    if (m.currentNode) q.set('currentNode', m.currentNode);
+    if (m.budget != null) q.set('budget', m.budget);
+    return 'detail.html?' + q.toString();
+  }
+
+  /* 리스트 렌더 — master-data mr-item 어법 (pill / title / site·category / requestor / date) */
+  document.getElementById('mrList').innerHTML = capexList.map((m, i) => `
+    <li class="mr-item mr-${m.status} waves-effect animate__animated animate__flipInX${i === 0 ? ' on' : ''}" data-idx="${i}" style="animation-delay:${i * 0.03}s;">
+      <span class="mr-status-pill st-${m.status}">${statusLabel[m.status]}</span>
+      <div class="mr-title-wrap" data-href="${detailUrl(m)}">
+        <span class="mr-id">[${m.id}]</span>
+        <span class="mr-desc">${m.name}</span>
+      </div>
+      <div class="mr-step-wrap">
+        <span class="mr-step">${m.site} · ${m.cat}</span>
+      </div>
+      <span class="mr-person">${m.person}</span>
+      <span class="mr-date">${m.date}</span>
+    </li>
+  `).join('');
+
+  /* 우측 카드 Process Flow — capexFlow 10단계 선형 수직 렌더 */
+  function renderListProcess(m) {
+    const container = document.getElementById('mrProcessFlow');
+    const curIdx = m.currentNode ? capexFlow.findIndex(n => n.key === m.currentNode) : -1;
+
+    function nodeHtml(n, st) {
+      const ico = st === 'done' ? 'check_circle' : st === 'rejected' ? 'cancel' : st === 'current' ? 'play_circle' : 'radio_button_unchecked';
+      /* 담당자 툴팁 — 현재 단계는 항목별 owner, 나머지는 단계별 기본 담당 (request = requestor) */
+      let tip = '';
+      if (st === 'current' || st === 'rejected') tip = m.owner || '';
+      else tip = n.key === 'request' ? m.person : (cpxStageOwners[n.key] || '');
+      const tipClass = tip ? ' tooltipped' : '';
+      const tipAttr = tip ? ` data-position="top" data-tooltip="${tip}"` : '';
+      return `<div class="pm-vnode ${st}${tipClass}"${tipAttr}>
+        <div class="pm-vnode-content">
+          <span class="pm-vnode-label">${n.no}. ${n.label}</span>
+        </div>
+        <i class="material-icons pm-node-ico">${ico}</i>
+      </div>`;
+    }
+
+    /* 10단계 → 5+5 스네이크 2열 (단일 컬럼은 카드 밖으로 넘침) */
+    const nodes = capexFlow.map((n, i) => {
+      let st;
+      if (m.status === 'approved') st = 'done';
+      else if (curIdx === -1) st = i === 0 ? 'current' : 'pending';
+      else if (i < curIdx) st = 'done';
+      else if (i === curIdx) st = m.status === 'rejected' ? 'rejected' : 'current';
+      else st = 'pending';
+      return nodeHtml(n, st);
+    });
+    const colHtml = (arr) => '<div class="pm-flow-vertical">'
+      + arr.map((h, j) => (j ? '<div class="pm-varrow"><i class="material-icons">arrow_downward</i></div>' : '') + h).join('')
+      + '</div>';
+    container.innerHTML = `<div class="cpx-pm-grid">${colHtml(nodes.slice(0, 5))}<div class="cpx-pm-grid-link"><i class="material-icons">arrow_forward</i></div>${colHtml(nodes.slice(5))}</div>`;
+
+    /* 기존 tooltip DOM/instance 정리 후 재생성 */
+    document.querySelectorAll('.material-tooltip').forEach(el => el.remove());
+    M.Tooltip.init(container.querySelectorAll('.tooltipped'));
+
+    /* 순차 flipInX 등장 */
+    container.querySelectorAll('.pm-vnode, .pm-varrow').forEach((el, i) => {
+      el.style.animationDelay = (i * 0.05) + 's';
+      el.classList.add('animate__animated', 'animate__flipInX');
+    });
+  }
+
+  /* 써머리 카드 업데이트 */
+  function showDetail(idx) {
+    const m = capexList[idx];
+    const card = document.getElementById('mrDetail');
+
+    document.getElementById('dtId').textContent = '[' + m.id + ']';
+    document.getElementById('dtDesc').textContent = m.name;
+    document.getElementById('dtLink').dataset.href = detailUrl(m);
+    document.getElementById('dtCat').textContent = m.cat;
+    document.getElementById('dtSubCat').textContent = m.subCat;
+    document.getElementById('dtSite').textContent = m.site;
+    document.getElementById('dtBudget').textContent = fmtMoney(m.budget);
+    document.getElementById('dtPerson').textContent = m.person;
+    document.getElementById('dtDate').textContent = m.date;
+    document.getElementById('dtActual').textContent = fmtMoney(m.actual);
+    document.getElementById('dtStage').textContent = stageLabel(m);
+
+    const stEl = document.getElementById('dtStatus');
+    stEl.textContent = statusLabel[m.status];
+    stEl.className = 'mr-status st-' + m.status;
+
+    card.className = 'mr-detail-card mr-' + m.status;
+
+    renderListProcess(m);
+  }
+
+  /* 리스트 클릭 → 선택 + 우측 카드 갱신 */
+  document.getElementById('mrList').addEventListener('click', (e) => {
+    const li = e.target.closest('.mr-item');
+    if (!li) return;
+    document.querySelectorAll('.mr-item').forEach(el => el.classList.remove('on'));
+    li.classList.add('on');
+    showDetail(Number(li.dataset.idx));
+  });
+
+  /* 타이틀 클릭 → 상세 이동 */
+  document.addEventListener('click', (e) => {
+    const wrap = e.target.closest('.mr-title-wrap, .mr-detail-title-wrap');
+    if (!wrap) return;
+    e.stopPropagation();
+    const href = wrap.dataset.href || (wrap.closest('.mr-detail-title-wrap') && document.getElementById('dtLink').dataset.href);
+    if (href) window.location.href = href;
+  });
+
+  /* ===== 탭 × 연도 필터 ===== */
+  function applyFilter() {
+    const activeTab = document.querySelector('#appleTab li.on');
+    const filter = activeTab.dataset.filter;
+    const year = document.getElementById('yearFilter').value;
+    let delay = 0;
+    document.querySelectorAll('.mr-item').forEach(li => {
+      const statusMatch = filter === 'all' || li.classList.contains('mr-' + filter);
+      const yearMatch = !year || capexList[Number(li.dataset.idx)].date.includes(year);
+      const match = statusMatch && yearMatch;
+      li.style.display = match ? '' : 'none';
+      if (match) {
+        li.classList.remove('animate__flipInX');
+        void li.offsetWidth;
+        li.style.animationDelay = (delay * 0.04) + 's';
+        li.classList.add('animate__flipInX');
+        delay++;
+      }
+    });
+    const firstVisible = [...document.querySelectorAll('.mr-item')].find(li => li.style.display !== 'none');
+    document.querySelectorAll('.mr-item').forEach(el => el.classList.remove('on'));
+    if (firstVisible) {
+      firstVisible.classList.add('on');
+      showDetail(Number(firstVisible.dataset.idx));
+    }
+  }
+
+  /* 애플탭 전환 */
+  const tabUl = document.querySelector('#appleTab ul');
+  const tabBg = tabUl.querySelector('.tab-bg');
+  tabUl.querySelectorAll('li').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabUl.querySelectorAll('li').forEach(t => t.classList.remove('on'));
+      tab.classList.add('on');
+      tabBg.style.left = (tab.offsetLeft - 2) + 'px';
+      applyFilter();
+    });
+  });
+
+  /* 연도 필터 — 변경 즉시 적용 (탭 상태와 AND 조합) */
+  document.getElementById('yearFilter').addEventListener('change', applyFilter);
+
+  /* ===== 검색 모달 ===== */
+  function filterList() {
+    const sId = document.getElementById('sId').value.toLowerCase();
+    const sName = document.getElementById('sName').value.toLowerCase();
+    const sCat = document.getElementById('sCat').value;
+    const sSite = document.getElementById('sSite').value;
+    const sStatus = document.getElementById('sStatus').value;
+    const sPerson = document.getElementById('sPerson').value.toLowerCase();
+
+    let delay = 0;
+    document.querySelectorAll('.mr-item').forEach(li => {
+      const m = capexList[Number(li.dataset.idx)];
+      const match =
+        (!sId || m.id.toLowerCase().includes(sId)) &&
+        (!sName || m.name.toLowerCase().includes(sName)) &&
+        (!sCat || m.cat === sCat) &&
+        (!sSite || m.site === sSite) &&
+        (!sStatus || m.status === sStatus) &&
+        (!sPerson || m.person.toLowerCase().includes(sPerson));
+      li.style.display = match ? '' : 'none';
+      if (match) {
+        li.classList.remove('animate__flipInX');
+        void li.offsetWidth;
+        li.style.animationDelay = (delay * 0.04) + 's';
+        li.classList.add('animate__flipInX');
+        delay++;
+      }
+    });
+    const firstVisible = [...document.querySelectorAll('.mr-item')].find(li => li.style.display !== 'none');
+    document.querySelectorAll('.mr-item').forEach(el => el.classList.remove('on'));
+    if (firstVisible) {
+      firstVisible.classList.add('on');
+      showDetail(Number(firstVisible.dataset.idx));
+    }
+  }
+
+  document.getElementById('btnSearchApply').addEventListener('click', () => {
+    filterList();
+    M.Modal.getInstance(document.getElementById('searchModal')).close();
+  });
+
+  document.getElementById('btnSearchReset').addEventListener('click', () => {
+    ['sId', 'sName', 'sPerson'].forEach(id => { document.getElementById(id).value = ''; });
+    ['sCat', 'sSite', 'sStatus'].forEach(id => { document.getElementById(id).value = ''; });
+    M.FormSelect.init(document.querySelectorAll('#searchModal select'));
+    document.querySelectorAll('.mr-item').forEach(li => { li.style.display = ''; });
+  });
+
+  /* ===== New Idea — 카테고리 카드 → Stage 1 Idea Registration ===== */
+  document.querySelectorAll('#newIdeaModal .step-card').forEach(card => {
+    card.addEventListener('click', () => {
+      M.Modal.getInstance(document.getElementById('newIdeaModal')).close();
+      window.location.href = 'detail.html?currentNode=request&cat=' + encodeURIComponent(card.dataset.cat);
+    });
+  });
+
+  /* step-card 글래스 + 틸트 (master-data 어법) */
+  document.querySelectorAll('.step-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--card-gx', x + '%');
+      card.style.setProperty('--card-gy', y + '%');
+      const rotY = ((x - 50) / 50) * 8;
+      const rotX = ((50 - y) / 50) * 8;
+      card.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.02)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transition = 'transform .3s ease';
+      card.style.transform = '';
+      setTimeout(() => { card.style.transition = ''; }, 300);
+    });
+  });
+
+  /* ===== 글래스 마우스 추적 (master-data 어법) ===== */
+  document.querySelector('.mr-list-wrap').addEventListener('mousemove', (e) => {
+    const wrap = e.currentTarget;
+    const r = wrap.getBoundingClientRect();
+    wrap.style.setProperty('--lw-gx', ((e.clientX - r.left) / r.width) * 100 + '%');
+    wrap.style.setProperty('--lw-gy', ((e.clientY - r.top) / r.height) * 100 + '%');
+  });
+  document.getElementById('mrDetail').addEventListener('mousemove', (e) => {
+    const card = e.currentTarget;
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--dc-gx', ((e.clientX - r.left) / r.width) * 100 + '%');
+    card.style.setProperty('--dc-gy', ((e.clientY - r.top) / r.height) * 100 + '%');
+    const node = e.target.closest('.pm-vnode');
+    if (node) {
+      const rect = node.getBoundingClientRect();
+      node.style.setProperty('--pm-gx', ((e.clientX - rect.left) / rect.width) * 100 + '%');
+      node.style.setProperty('--pm-gy', ((e.clientY - rect.top) / rect.height) * 100 + '%');
+    }
+  });
+  document.getElementById('mrList').addEventListener('mousemove', (e) => {
+    const li = e.target.closest('.mr-item.on');
+    if (!li) return;
+    const rect = li.getBoundingClientRect();
+    li.style.setProperty('--li-gx', ((e.clientX - rect.left) / rect.width) * 100 + '%');
+    li.style.setProperty('--li-gy', ((e.clientY - rect.top) / rect.height) * 100 + '%');
+  });
+  document.getElementById('appleTab').addEventListener('mousemove', (e) => {
+    const tab = document.querySelector('.tab-bg');
+    const rect = tab.getBoundingClientRect();
+    tab.style.setProperty('--tab-gx', ((e.clientX - rect.left) / rect.width) * 100 + '%');
+    tab.style.setProperty('--tab-gy', ((e.clientY - rect.top) / rect.height) * 100 + '%');
+  });
+
+  /* 검색 모달 글래스 — 로컬 마우스 추적 */
+  document.querySelectorAll('.search-modal').forEach(modal => {
+    modal.addEventListener('mousemove', (e) => {
+      const rect = modal.getBoundingClientRect();
+      modal.style.setProperty('--modal-gx', ((e.clientX - rect.left) / rect.width) * 100 + '%');
+      modal.style.setProperty('--modal-gy', ((e.clientY - rect.top) / rect.height) * 100 + '%');
+    });
+  });
+
+  /* ===== 초기화 ===== */
+  document.addEventListener('DOMContentLoaded', () => {
+    M.FormSelect.init(document.querySelectorAll('select'));
+    M.Modal.init(document.querySelectorAll('.modal'), {
+      onOpenStart: () => {
+        document.querySelector('.app-header').classList.add('content-blur');
+        document.querySelector('.app-main').classList.add('content-blur');
+      },
+      onCloseStart: () => {
+        document.querySelector('.app-header').classList.remove('content-blur');
+        document.querySelector('.app-main').classList.remove('content-blur');
+      },
+    });
+    if (typeof initHBtnGlass === 'function') initHBtnGlass();
+
+    /* 탭 인디케이터 초기 위치 + 기본 필터(연도 2026) 적용 — 첫 항목 선택 포함 */
+    const activeTab = document.querySelector('#appleTab li.on');
+    tabBg.style.left = (activeTab.offsetLeft - 2) + 'px';
+    applyFilter();
+  });
+</script>
+</body>
 </html>
