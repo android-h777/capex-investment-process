@@ -80,7 +80,9 @@
   margin: 0px 0 20px;
   padding: 0px 10px 10px 10px;
 }
-#cpxProjSummary .rt-keys { gap: 5px; }
+/* width 100% — 부모(.rt-card)가 flex 라 .rt-keys 가 콘텐츠 폭으로 수축,
+   값 우측정렬이 카드 끝까지 못 가던 근본 원인 (2026-08-19 사용자 devtools 진단) */
+#cpxProjSummary .rt-keys { gap: 5px; width: 100%; }
 /* 정보 패널이지 클릭 카드가 아님 — rt-card 의 핸드 커서·호버 상승감 제거, 민짜 유지 (2026-08-18) */
 #cpxProjSummary.rt-card { cursor: default; }
 #cpxProjSummary.rt-card:hover {
