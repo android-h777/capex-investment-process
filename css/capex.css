@@ -120,6 +120,10 @@
 #cpxProjSummary .rt-key-r .rt-v {
   flex: 1;
   min-width: 0;
+  max-width: 70%;         /* 참조 사이드바 어법(summary-value max-width) — 긴 값은 두 줄로 꺾여
+                             라벨과 분리된 우측 블록으로 보임. 정렬 자체는 원래 우측이었으나
+                             한 줄을 꽉 채우면 라벨에 붙어 보이는 착시 해소 (2026-08-19) */
+  margin-left: auto;      /* flex-grow 가 어떤 이유로 무력화돼도 우측 밀착 보장 (값 길이 무관) */
   text-align: right;
 }
 
