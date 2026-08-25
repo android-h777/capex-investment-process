@@ -328,6 +328,8 @@ const capexCase = {
     notes: 'Strong business case — aligns with capacity growth strategy for Waterford site. ROI and payback period are within acceptable range. Recommend proceeding to AR with updated spend schedule from PM. Vendor pre-qualification should be completed before procurement phase.',
     /* Major Project Designation (Prototype V2.0 신규) — 예산 > $1M 자동 플래그 */
     majorProject: 'Yes',
+    /* Justification — 셀렉트 전환 (2026-08-19 클라이언트 회신) */
+    majorJustification: 'Budget > $1M',
     history: [
       { date: 'Jan 20, 2026', action: 'Received',       by: 'System',      note: 'Auto-routed to site gatekeeper' },
       { date: 'Jan 22, 2026', action: 'Reviewed',       by: 'D. Thompson', note: 'Strong business case — aligns with capacity growth strategy' },
@@ -379,9 +381,9 @@ const capexCase = {
       { kind: 'file', label: 'Engineering_Spec_RX2001.pdf',  size: '2.8 MB' },
       { kind: 'file', label: 'P&ID_Drawing.dwg',             size: '5.4 MB' },
     ],
-    /* 비교 대상 기존 설비 — (EQUIP MASTERDATA) 퀵서치 + 타입 요약 (TFT 2필드 구성) */
+    /* 비교 대상 기존 설비 — (EQUIP MASTERDATA) 퀵서치 + CMMS 검색 팝업(예정)
+       Equipment Type 필드는 삭제 (2026-08-19 클라이언트 회신) */
     referenceEquip: 'RX-1001 (Polymer Reactor, Line #1, Waterford)',
-    refEquipType: 'Glass-Lined Reactor — 8,000L · installed 2014, 10 years in service',
     breakdownHistory: [
       { date: 'Nov 5, 2024', wo: 'WO-2024-04821', desc: 'Agitator seal leak — bearing wear after 8 years', downtime: '72 hrs',  cost: '$ 45,000' },
       { date: 'Jun 12, 2024', wo: 'WO-2024-02917', desc: 'Glass lining crack — thermal shock during CIP cycle', downtime: '120 hrs', cost: '$ 82,000' },
@@ -410,24 +412,24 @@ const capexCase = {
     ],
   },
 
-  /* Stage 5 — TBE */
+  /* Stage 5 — TBE (2026-08-19 클라이언트 회신: 벤더별 Pass/Fail 판정, 단일 선정 콤보 제거) */
   stage5: {
     rfqNo: 'RFQ-2026-0042', /* 외부 구매 툴에서 불러온 기준 RFQ (TBE) */
     vendors: [
-      { name: 'Vendor A', score: '92 / 100', compliance: 'Pass',        leadTime: '24 wks', comment: 'Best design, proven record', winner: true },
-      { name: 'Vendor B', score: '85 / 100', compliance: 'Pass',        leadTime: '28 wks', comment: 'Good, longer delivery' },
-      { name: 'Vendor C', score: '72 / 100', compliance: 'Conditional', leadTime: '26 wks', comment: 'Spec gap' },
+      { name: 'Vendor A', score: '92 / 100', decision: 'Pass', leadTime: '24 wks', comment: 'Best design, proven record', winner: true },
+      { name: 'Vendor B', score: '85 / 100', decision: 'Pass', leadTime: '28 wks', comment: 'Good, longer delivery' },
+      { name: 'Vendor C', score: '72 / 100', decision: 'Fail', leadTime: '26 wks', comment: 'Spec gap' },
     ],
-    decision: 'Vendor A — Technically preferred',
   },
 
-  /* Stage 6 — CBE */
+  /* Stage 6 — CBE (2026-08-19 클라이언트 회신: 벤더별 Decision 컬럼 삭제 —
+     최종 선정은 표 하단 단일 콤보(TBE Pass 업체만)로. winner = 초기 선정값) */
   stage6: {
     rfqNo: 'RFQ-2026-0042', /* 외부 구매 툴에서 불러온 기준 RFQ (CBE — TBE와 독립 선택) */
     vendors: [
-      { name: 'Vendor A', score: 88, quoted: '$ 2,350K', negotiated: '$ 2,280K', terms: '30/40/20/10', warranty: '24 mo', decision: 'Selected',     winner: true },
-      { name: 'Vendor B', score: 82, quoted: '$ 2,520K', negotiated: '$ 2,450K', terms: '40/30/20/10', warranty: '18 mo', decision: 'Not selected' },
-      { name: 'Vendor C', score: 75, quoted: '$ 2,100K', negotiated: '—',        terms: '50/30/20',    warranty: '12 mo', decision: 'Excluded'     },
+      { name: 'Vendor A', score: 88, quoted: '$ 2,350K', negotiated: '$ 2,280K', terms: '30/40/20/10', warranty: '24 mo', winner: true },
+      { name: 'Vendor B', score: 82, quoted: '$ 2,520K', negotiated: '$ 2,450K', terms: '40/30/20/10', warranty: '18 mo' },
+      { name: 'Vendor C', score: 75, quoted: '$ 2,100K', negotiated: '—',        terms: '50/30/20',    warranty: '12 mo' },
     ],
     negotiation: 'Warranty 18→24 mo, spare parts included, 3% price reduction. Budget savings: $ 520K (18.6%)',
   },

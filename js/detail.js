@@ -330,7 +330,8 @@ function renderStageGatekeeper() {
         <select>
           <option value="" disabled>Select…</option>
           <option ${d.decision === 'Advanced to AR' ? 'selected' : ''}>Advanced to AR</option>
-          <option ${d.decision === 'FPP — Hold with Notes' ? 'selected' : ''}>FPP — Hold with Notes</option>
+          <option ${d.decision === 'FPP (Further Project Planning)' ? 'selected' : ''}>FPP (Further Project Planning)</option>
+          <option ${d.decision === 'Hold' ? 'selected' : ''}>Hold</option>
           <option ${d.decision === 'Rejected' ? 'selected' : ''}>Rejected</option>
         </select>
       </div>
@@ -356,8 +357,11 @@ function renderStageGatekeeper() {
       </div>
 
       <div class="form-group">
-        <label>Justification</label>
-        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">flag</i><span class="bi-readonly-text">Budget &gt; $ 1,000,000 — auto-flagged by system</span></div>
+        <label>Justification ${tip('Budget > $1M is auto-flagged by system — other reasons selectable')}</label>
+        <select>
+          <option value="" disabled>Select…</option>
+          ${['Budget > $1M', 'Strategic Initiative', 'Regulatory', 'EHS Safety', 'Other'].map(j => `<option ${j === d.majorJustification ? 'selected' : ''}>${j}</option>`).join('')}
+        </select>
       </div>
 
     </div>
@@ -421,7 +425,7 @@ function renderStageBudget() {
     </div>
 
     <div class="bi-block-head">
-      <h5 class="bi-block-title"><span class="bi-bar"></span>AR Supplements</h5>
+      <h5 class="bi-block-title"><span class="bi-bar"></span>AR Supplements <small>— ID auto-generated (${d.arNo}-1, -2 …)</small></h5>
       <div class="bi-block-meta">
         <a href="javascript:;" class="hBtn hBtn-sm hOrange waves-effect" id="cpxSuppAdd"><i class="material-icons">add</i><span class="label">Add Supplement</span></a>
       </div>
@@ -473,11 +477,22 @@ function bindSupplements() {
   };
 
   addBtn.addEventListener('click', () => {
+    /* Type — 보충 사유 셀렉트 (2026-08-19 클라이언트 회신). 표 내부라 native bi-select */
     tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td class="hoo-no"></td>
         <td><span class="cpx-supp-no"></span></td>
-        <td>Supplement</td>
+        <td>
+          <div class="bi-select-wrap">
+            <select class="bi-select browser-default">
+              <option value="" disabled selected>Type…</option>
+              <option>Scope Change</option>
+              <option>Cost Overrun</option>
+              <option>Design Change</option>
+              <option>Contingency</option>
+            </select>
+          </div>
+        </td>
         <td class="hoo-num">
           <div class="aniInput cpx-money-field">
             <span class="cpx-money-unit">$</span>
@@ -488,6 +503,7 @@ function bindSupplements() {
         <td class="hoo-x"><i class="material-icons">close</i></td>
       </tr>`);
     bindMoneyInputs(tbody.lastElementChild);
+    bindSelectChevron(tbody.lastElementChild);   /* Type 셀렉트 chevron 회전 (동적 행) */
     recalc();
     if (window.M) M.toast({ html: `Supplement ${arNo}-${tbody.children.length - 1} added — enter the additional budget` });
   });
@@ -1629,15 +1645,20 @@ function renderStage2() {
         <label>Overall Assessment</label>
         <select>
           <option value="" disabled>Select…</option>
-          <option ${d.riskLevel === 'High' ? 'selected' : ''}>High Risk</option>
-          <option ${d.riskLevel === 'Medium' ? 'selected' : ''}>Medium Risk</option>
           <option ${d.riskLevel === 'Low' ? 'selected' : ''}>Low Risk</option>
+          <option ${d.riskLevel === 'Medium' ? 'selected' : ''}>Medium Risk</option>
+          <option ${d.riskLevel === 'High' ? 'selected' : ''}>High Risk</option>
         </select>
       </div>
 
       <div class="form-group">
         <label>Review Result</label>
-        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">check_circle</i><span class="bi-readonly-text">${d.reviewResult}</span></div>
+        <select>
+          <option value="" disabled>Select…</option>
+          <option ${d.reviewResult === 'Approved' ? 'selected' : ''}>Approved</option>
+          <option ${d.reviewResult === 'Conditional' ? 'selected' : ''}>Conditional</option>
+          <option ${d.reviewResult === 'Rejected' ? 'selected' : ''}>Rejected</option>
+        </select>
       </div>
 
     </div>
@@ -1901,19 +1922,20 @@ function renderStage4() {
     <h5 class="bi-block-title"><span class="bi-bar"></span>Specification Documents <small>— EHS risk assessment, engineering specs, P&amp;IDs</small></h5>
     ${attachZoneHtml(d.specDocs)}
 
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Installed Base Review <small>(from CMMS)</small></h5>
+    <div class="bi-block-head">
+      <h5 class="bi-block-title"><span class="bi-bar"></span>Installed Base Review <small>(from CMMS)</small></h5>
+      <div class="bi-block-meta">
+        <a href="javascript:;" class="hBtn hBtn-sm hBlue waves-effect" id="cpxCmmsSearch"><i class="material-icons">search</i><span class="label">Search</span></a>
+      </div>
+    </div>
     <div class="form-grid">
-      <div class="form-group">
-        <label>Reference Equipment</label>
+      <div class="form-group span-2">
+        <label>Reference Equipment ${tip('CMMS equipment search popup — to be added')}</label>
         <div class="aniInput cpx-qs-field input-field">
           <input type="text" class="browser-default cpx-quicksearch" value="${d.referenceEquip}" data-master="equipment" placeholder="Quick search…" autocomplete="off">
           <i class="material-icons cpx-qs-ico">search</i>
           <span class="focus-border"></span>
         </div>
-      </div>
-      <div class="form-group">
-        <label>Equipment Type</label>
-        <div class="aniInput"><input type="text" class="browser-default" value="${d.refEquipType}" readonly><span class="focus-border"></span></div>
       </div>
     </div>
 
@@ -1967,40 +1989,36 @@ const CPX_PURCHASING_URL = 'https://purchasing.mpm.com/rfq/new';
 function renderStage5() {
   const d = capexCase.stage5;
 
-  /* Compliance 색 — Stage 4 Result 색 클래스 재사용 (Pass sage / Conditional terracotta / Fail danger) */
-  const compCls = (c) => c === 'Pass' ? 'cpx-res-good'
-                       : c === 'Conditional' ? 'cpx-res-part' : 'cpx-res-bad';
-
-  /* 평가 행 — 최고 점수 벤더(winner)는 bronze 틴트 행 + 벤더명 옆 트로피 + Score 강조 (PDF 명세: 하이라이트 표시)
-     ※ 칩은 컬럼 폭에서 줄바꿈으로 행 높이 깨짐 (2026-06-05) — 같은 줄 인라인 아이콘으로 */
+  /* 평가 행 — 벤더별 Pass/Fail 판정 셀렉트 (2026-08-19 클라이언트 회신: Compliance → Decision,
+     단일 선정 콤보는 CBE 하단으로 이동·통합). 최고 점수 벤더(winner)는 bronze 틴트 + 트로피 유지 */
   const rows = d.vendors.map(v => `
     <tr${v.winner ? ' class="cpx-winner-row"' : ''}>
       <td><b>${v.name}</b>${v.winner ? '<i class="material-icons cpx-winner-ico" title="Technically preferred">emoji_events</i>' : ''}</td>
       <td class="hoo-num${v.winner ? ' cpx-win-strong' : ''}">${v.score}</td>
-      <td class="${compCls(v.compliance)}">${v.compliance}</td>
+      <td>
+        <div class="bi-select-wrap">
+          <select class="bi-select browser-default cpx-tbe-dec" data-vendor="${v.name}">
+            <option ${v.decision === 'Pass' ? 'selected' : ''}>Pass</option>
+            <option ${v.decision === 'Fail' ? 'selected' : ''}>Fail</option>
+          </select>
+        </div>
+      </td>
       <td class="hoo-num">${v.leadTime}</td>
       <td>${v.comment}</td>
     </tr>`).join('');
 
   return `
-    <h5 class="bi-block-title"><span class="bi-bar"></span>Technical Bid Evaluation</h5>
+    <h5 class="bi-block-title"><span class="bi-bar"></span>Technical Bid Evaluation <small>— vendors that pass become selectable in CBE below</small></h5>
     <div class="hoo-spec-table">
       <table class="hoo-table">
         <colgroup>
-          <col style="width:170px"><col style="width:110px"><col style="width:120px"><col style="width:100px"><col>
+          <col style="width:170px"><col style="width:110px"><col style="width:130px"><col style="width:100px"><col>
         </colgroup>
         <thead>
-          <tr><th>Vendor</th><th class="hoo-th-num">Score</th><th>Compliance</th><th class="hoo-th-num">Lead Time</th><th>Comment</th></tr>
+          <tr><th>Vendor</th><th class="hoo-th-num">Score</th><th class="hoo-th-key">Decision</th><th class="hoo-th-num">Lead Time</th><th>Comment</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>
-
-    <div class="form-grid">
-      <div class="form-group span-2">
-        <label>Decision</label>
-        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">check_circle</i><span class="bi-readonly-text">${d.vendors.find(v => v.winner).name} — Technically preferred</span></div>
-      </div>
     </div>
   `;
 }
@@ -2012,42 +2030,32 @@ function renderStage5() {
  *           Payment Terms = 계약금 / FAT 후 / SAT 후 / 최종 비율 (예: 30/40/20/10)
  *           출력 — 최종 선정 벤더 + 계약 금액 확정 (TBE 와 CBE 종합하여 의사결정)
  * ================================================================= */
-/* Budget Savings = 승인 예산 − 협상 확정가 (TFT: "Budget Savings: $520,000 (18.6%)") */
-function cbeSavingsText(winner) {
-  const approved = parseMoneyNum(capexCase.stage3.approvedAmount);
-  const negotiated = parseUsdC(winner.negotiated);   /* '$ 2,280K' — K/M 접미사 파싱 (parseMoneyNum 은 K 를 버려 오계산) */
-  const save = approved - negotiated;
-  const rate = approved > 0 ? (save / approved * 100).toFixed(1) : 0;
-  return `$ ${save.toLocaleString('en-US')} (${rate}% vs approved budget)`;
+/* CBE 평가 행 — 최종 선정 벤더(selected)는 bronze 틴트 + 트로피 + 핵심 값(Score/Negotiated) 강조.
+   Decision 컬럼은 삭제 — 최종 선정은 표 하단 단일 콤보 (2026-08-19 클라이언트 회신) */
+function cpxCbeRowHtml(v, selected) {
+  const win = v.name === selected;
+  return `
+    <tr${win ? ' class="cpx-winner-row"' : ''}>
+      <td><b>${v.name}</b>${win ? '<i class="material-icons cpx-winner-ico" title="Final selection">emoji_events</i>' : ''}</td>
+      <td class="hoo-num${win ? ' cpx-win-strong' : ''}">${v.score}</td>
+      <td class="hoo-num">${v.quoted}</td>
+      <td class="hoo-num${win ? ' cpx-win-strong' : ''}">${v.negotiated}</td>
+      <td class="hoo-num">${v.terms}</td>
+      <td class="hoo-num">${v.warranty}</td>
+    </tr>`;
 }
 
 function renderStage6() {
   const d = capexCase.stage6;
   const winner = d.vendors.find(v => v.winner);
-
-  /* Decision 색 — Selected sage / Not selected muted / Excluded danger */
-  const decCls = (x) => x === 'Selected' ? 'cpx-res-good'
-                      : x === 'Excluded' ? 'cpx-res-bad' : 'cpx-res-mute';
-
-  /* 평가 행 — winner 는 Stage 5 와 동일 어법 (bronze 틴트 + 트로피 + 핵심 값 강조)
-     CBE 의 핵심 값 = Score 와 계약 확정 금액(Negotiated) */
-  const rows = d.vendors.map(v => `
-    <tr${v.winner ? ' class="cpx-winner-row"' : ''}>
-      <td><b>${v.name}</b>${v.winner ? '<i class="material-icons cpx-winner-ico" title="Final selection">emoji_events</i>' : ''}</td>
-      <td class="hoo-num${v.winner ? ' cpx-win-strong' : ''}">${v.score}</td>
-      <td class="hoo-num">${v.quoted}</td>
-      <td class="hoo-num${v.winner ? ' cpx-win-strong' : ''}">${v.negotiated}</td>
-      <td class="hoo-num">${v.terms}</td>
-      <td class="hoo-num">${v.warranty}</td>
-      <td class="${decCls(v.decision)}">${v.decision}</td>
-    </tr>`).join('');
+  const passVendors = capexCase.stage5.vendors.filter(v => v.decision === 'Pass').map(v => v.name);
 
   return `
     <h5 class="bi-block-title"><span class="bi-bar"></span>Commercial Bid Evaluation</h5>
     <div class="hoo-spec-table">
       <table class="hoo-table">
         <colgroup>
-          <col style="width:170px"><col style="width:80px"><col style="width:110px"><col style="width:120px"><col style="width:155px"><col style="width:100px"><col>
+          <col style="width:170px"><col style="width:80px"><col style="width:110px"><col style="width:120px"><col style="width:155px"><col>
         </colgroup>
         <thead>
           <tr>
@@ -2057,24 +2065,63 @@ function renderStage6() {
             <th class="hoo-th-num">Negotiated</th>
             <th class="hoo-th-num">Payment Terms${tip('Down payment / After FAT / After SAT / Final (%)')}</th>
             <th class="hoo-th-num">Warranty</th>
-            <th>Decision</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody id="cpxCbeBody">${d.vendors.map(v => cpxCbeRowHtml(v, winner.name)).join('')}</tbody>
       </table>
     </div>
 
     <div class="form-grid">
-      <div class="form-group span-2">
-        <label>Negotiation Result</label>
-        <div class="aniInput"><input type="text" class="browser-default" value="${d.negotiation}"><span class="focus-border"></span></div>
+      <div class="form-group">
+        <label>Final Vendor Selection ${tip('Only vendors that passed TBE are selectable')}</label>
+        <select id="cpxCbeVendor">
+          ${passVendors.map(n => `<option ${n === winner.name ? 'selected' : ''}>${n}</option>`).join('')}
+        </select>
       </div>
       <div class="form-group span-2">
-        <label>Budget Savings ${tip('Approved budget − negotiated contract amount')}</label>
-        <div class="bi-readonly"><i class="material-icons bi-readonly-ico">savings</i><span class="bi-readonly-text">${winner.name} selected — ${cbeSavingsText(winner)}</span></div>
+        <label>Negotiation Summary</label>
+        <div class="aniInput"><input type="text" class="browser-default" value="${d.negotiation}"><span class="focus-border"></span></div>
       </div>
     </div>
   `;
+}
+
+/* =================================================================
+ * Stage 7 — TBE Pass/Fail ↔ CBE 최종 선정 콤보 연동 (2026-08-19)
+ *   TBE 판정 변경 → CBE 콤보 옵션을 Pass 업체만으로 재구성 (FormSelect 재-init)
+ *   콤보 선택 변경 → CBE 표의 선정 하이라이트(트로피/틴트) 재렌더
+ * ================================================================= */
+function bindTbeCbe() {
+  const combo = document.getElementById('cpxCbeVendor');
+  const tbody = document.getElementById('cpxCbeBody');
+  if (!combo || !tbody) return;
+
+  const rebuildRows = () => {
+    tbody.innerHTML = capexCase.stage6.vendors.map(v => cpxCbeRowHtml(v, combo.value)).join('');
+    if (typeof initAllHooTableOverlays === 'function') initAllHooTableOverlays();
+  };
+
+  const refreshCombo = () => {
+    const pass = [];
+    document.querySelectorAll('.cpx-tbe-dec').forEach(s => { if (s.value === 'Pass') pass.push(s.dataset.vendor); });
+    const keep = pass.includes(combo.value) ? combo.value : (pass[0] || '');
+    combo.innerHTML = pass.length
+      ? pass.map(n => `<option ${n === keep ? 'selected' : ''}>${n}</option>`).join('')
+      : '<option value="" disabled selected>No TBE-passed vendor</option>';
+    if (window.M && M.FormSelect) {
+      M.FormSelect.getInstance(combo)?.destroy();
+      M.FormSelect.init(combo);
+    }
+    rebuildRows();
+  };
+
+  document.querySelectorAll('.cpx-tbe-dec').forEach(sel => {
+    sel.addEventListener('change', () => {
+      refreshCombo();
+      if (window.M) M.toast({ html: `TBE ${sel.dataset.vendor}: ${sel.value} — CBE selectable vendors updated` });
+    });
+  });
+  combo.addEventListener('change', rebuildRows);
 }
 
 /* =================================================================
@@ -2976,6 +3023,13 @@ function bindStage10Charts() {
   });
 }
 
+/* Stage 3 — Reference Equipment CMMS 검색 버튼 (검색 팝업은 추가 예정 — 플레이스홀더) */
+function bindCmmsSearch() {
+  document.getElementById('cpxCmmsSearch')?.addEventListener('click', () => {
+    if (window.M) M.toast({ html: 'CMMS equipment search popup — to be added' });
+  });
+}
+
 /* Stage 8 — Budget Transfer / Closure Document 버튼 (프로토타입: 토스트 피드백) */
 function bindStage8Extras() {
   document.getElementById('cpxFaTransfer')?.addEventListener('click', () => {
@@ -3623,8 +3677,12 @@ document.addEventListener('DOMContentLoaded', () => {
   bindSchedule();
   bindSpendSchedule();
 
-  /* Stage 3 Utility Requirements — 행 추가/삭제 (Prototype V2.0) */
+  /* Stage 3 Utility Requirements — 행 추가/삭제 (Prototype V2.0) + CMMS 검색 버튼 */
   bindUtilities();
+  bindCmmsSearch();
+
+  /* Stage 7 TBE Pass/Fail ↔ CBE 최종 선정 콤보 연동 */
+  bindTbeCbe();
 
   /* Stage 8 Budget Transfer / Closure 버튼 (Prototype V2.0) */
   bindStage8Extras();
